@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\2FA_Backend.Domain\2FA_Backend.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
