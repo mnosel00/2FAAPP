@@ -1,0 +1,45 @@
+{
+  // Ustawienia globalne dla edytora
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // *** KONFIGURACJA DLA JAVASCRIPT/TYPESCRIPT (ANGULAR) ***
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    // Dodano wsparcie dla plików .html i .ts
+    "html",
+    "typescript"
+  ],
+  "editor.codeActionsOnSave": {
+    // Automatyczne poprawianie błędów ESLint przy zapisie
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // *** KONFIGURACJA DLA STYLÓW (ANGULAR) ***
+  "stylelint.enable": true,
+
+  // Wyłączenie wbudowanych walidatorów VS Code, by nie kolidowały ze Stylelint
+  "css.validate": false,
+  "scss.validate": false,
+
+  // Ustaw Stylelint jako domyślny formater dla stylów
+  "stylelint.validate": ["css", "scss"],
+  "[css]": {
+    "editor.defaultFormatter": "stylelint.vscode-stylelint"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "stylelint.vscode-stylelint"
+  },
+
+  // *** WAŻNE DLA ANGULAR: Formatowanie wbudowanych szablonów HTML ***
+
+  // Wymuszenie formatowania HTML, które jest często potrzebne w szablonach komponentów (.html)
+  "[html]": {
+    // Użycie Prettiera jako domyślnego formatera dla plików .html
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}
