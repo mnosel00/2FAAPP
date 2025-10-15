@@ -13,10 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\2FA_Backend.Application\2FA_Backend.Application.csproj" />
     <ProjectReference Include="..\2FA_Backend.Domain\2FA_Backend.Domain.csproj" />
     <ProjectReference Include="..\2FA_Backend.Infastructure\2FA_Backend.Infastructure.csproj" />
