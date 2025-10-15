@@ -15,8 +15,4 @@
     <ProjectReference Include="..\2FA_Backend.Domain\2FA_Backend.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Interfaces\" />
-  </ItemGroup>
-
 </Project>
