@@ -9,6 +9,17 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\2FA_Backend.Application\2FA_Backend.Application.csproj" />
+    <ProjectReference Include="..\2FA_Backend.Domain\2FA_Backend.Domain.csproj" />
+    <ProjectReference Include="..\2FA_Backend.Infastructure\2FA_Backend.Infastructure.csproj" />
   </ItemGroup>
 
 </Project>
