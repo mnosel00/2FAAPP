@@ -95,8 +95,17 @@ export class AuthComponent implements OnInit {
         alert('Rejestracja sukces! Zeskanuj kod QR, aby aktywować 2FA.');
       },
       error: (err) => {
-        this.errorMessage =
-          'Błąd rejestracji: ' + (err.error.errors?.join(', ') || 'Nieznany błąd.');
+        let details = 'Nieznany błąd.';
+        if (err.error?.errors) {
+          if (Array.isArray(err.error.errors)) {
+            details = err.error.errors.join(', ');
+          } else if (typeof err.error.errors === 'string') {
+            details = err.error.errors;
+          } else {
+            details = JSON.stringify(err.error.errors);
+          }
+        }
+        this.errorMessage = 'Błąd rejestracji: ' + details;
       },
     });
   }
