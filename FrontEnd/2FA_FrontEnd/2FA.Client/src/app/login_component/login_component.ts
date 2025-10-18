@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth';
+import { LoginRequest } from '../auth_compomnent/auth.models';
 
 @Component({
   selector: 'app-login',
@@ -26,19 +27,22 @@ export class LoginComponent {
     });
   }
 
+  // Etap 1: Weryfikacja loginu i hasła
   onLoginSubmit(): void {
     if (this.loginForm.invalid) {
       return;
     }
     this.errorMessage = null;
+    
+    // Wysyłamy tylko email i hasło
     this.authService.login(this.loginForm.value).subscribe({
       next: (response) => {
-        if (response.is2faRequired) {
+        if (response.twoFactorRequired) {
+          // Jeśli serwer wymaga 2FA, przechodzimy do drugiego etapu
           this.isTfaRequired = true;
-        } else {
-          // Logowanie pomyślne bez 2FA
-          console.log('Zalogowano pomyślnie!', response.jwtToken);
-          // Tutaj zapisz token JWT (np. w localStorage) i przekieruj użytkownika
+        } else if (response.token) {
+          // Jeśli 2FA nie jest wymagane i dostaliśmy token, logowanie jest zakończone
+          this.handleSuccessfulLogin(response.token);
         }
       },
       error: (err) => {
@@ -48,25 +52,40 @@ export class LoginComponent {
     });
   }
 
+  // Etap 2: Weryfikacja kodu 2FA
   onTfaSubmit(): void {
-    if (this.tfaForm.invalid) {
+    if (this.tfaForm.invalid || this.loginForm.invalid) {
       return;
     }
     this.errorMessage = null;
-    const request = {
-      email: this.loginForm.get('email')?.value,
-      code: this.tfaForm.get('code')?.value
+
+    // Tworzymy nowe żądanie zawierające email, hasło ORAZ kod 2FA
+    const loginRequest: LoginRequest = {
+      ...this.loginForm.value,
+      twoFactorCode: this.tfaForm.get('code')?.value
     };
 
-    this.authService.verify2fa(request).subscribe({
+    this.authService.login(loginRequest).subscribe({
       next: (response) => {
-        console.log('Logowanie 2FA pomyślne!', response.jwtToken);
-        // Tutaj zapisz token JWT (np. w localStorage) i przekieruj użytkownika
+        if (response.token) {
+          // Otrzymaliśmy token, logowanie 2FA zakończone sukcesem
+          this.handleSuccessfulLogin(response.token);
+        }
       },
       error: (err) => {
         this.errorMessage = 'Nieprawidłowy kod weryfikacyjny.';
         console.error(err);
       }
     });
+  }
+
+  private handleSuccessfulLogin(token: string): void {
+    console.log('Zalogowano pomyślnie! Token JWT:', token);
+    // Tutaj możesz zapisać token (np. w localStorage) i przekierować użytkownika
+    // localStorage.setItem('jwt_token', token);
+    // this.router.navigate(['/dashboard']);
+    this.isTfaRequired = false;
+    this.loginForm.reset();
+    this.tfaForm.reset();
   }
 }

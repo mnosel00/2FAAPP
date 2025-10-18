@@ -12,19 +12,12 @@ export interface RegisterResponse {
 export interface LoginRequest {
   email: string;
   password: string;
+  twoFactorCode?: string;
 }
 
 export interface LoginResponse {
-  is2faRequired: boolean;
-  token?: string; 
-  jwtToken?: string; 
+  twoFactorRequired?: boolean;
+  userId: string;
+  token?: string;
 }
 
-export interface Verify2FARequest {
-  email: string;
-  code: string;
-}
-
-export interface Verify2FAResponse {
-    jwtToken: string;
-}

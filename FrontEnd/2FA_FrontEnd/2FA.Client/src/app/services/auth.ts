@@ -6,8 +6,6 @@ import {
   RegisterResponse, 
   LoginRequest, 
   LoginResponse, 
-  Verify2FARequest,
-  Verify2FAResponse
 } from '../auth_compomnent/auth.models';
 
 @Injectable({
@@ -23,12 +21,8 @@ export class AuthService {
   }
 
   login(data: LoginRequest): Observable<LoginResponse> {
-    // Zakładam, że endpoint do logowania to /api/Auth/login
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, data);
   }
 
-  verify2fa(data: Verify2FARequest): Observable<Verify2FAResponse> {
-    // Zakładam, że endpoint do weryfikacji kodu 2FA to /api/Auth/verify-2fa
-    return this.http.post<Verify2FAResponse>(`${this.apiUrl}/verify-2fa`, data);
-  }
+  
 }
