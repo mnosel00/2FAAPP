@@ -59,6 +59,13 @@ namespace _2FA_Backend.Controllers
             return Unauthorized(new { Errors = result.Errors });
         }
 
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            // Usunięcie ciasteczka po stronie klienta
+            Response.Cookies.Delete("auth_token");
+            return Ok(new { Message = "Wylogowano pomyślnie." });
+        }
 
         [HttpGet("profile/{userId}")]
         public async Task<IActionResult> GetProfile(string userId)
