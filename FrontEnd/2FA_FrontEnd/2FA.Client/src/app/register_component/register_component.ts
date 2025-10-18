@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { QRCodeModule } from 'ngx-qrcode';
+import { QRCodeModule } from 'angularx-qrcode'; 
 import { AuthService } from '../services/auth';
 import { RegisterResponse } from '../auth_compomnent/auth.models';
 
