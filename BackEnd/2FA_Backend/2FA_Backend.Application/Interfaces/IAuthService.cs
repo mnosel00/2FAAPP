@@ -11,7 +11,6 @@ namespace _2FA_Backend.Application.Interfaces
     {
         Task<AuthResult> RegisterUserAsync(RegisterModel model);
         Task<AuthResult> LoginUserAsync(LoginModel model);
-        Task<AuthResult> Verify2FACodeAsync(Verify2FAModel model);
         Task<string> GetUserProfile(string userId);
     }
 }

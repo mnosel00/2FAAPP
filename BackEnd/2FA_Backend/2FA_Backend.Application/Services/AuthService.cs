@@ -40,7 +40,24 @@ namespace _2FA_Backend.Application.Services
 
             if (await _userRepository.GetTwoFactorEnabledAsync(user))
             {
-                return new AuthResult { Success = true, TwoFactorRequired = true, UserId = user.Id };
+                if (string.IsNullOrEmpty(model.TwoFactorCode))
+                {
+                    // Hasło poprawne, ale wymagany jest kod 2FA
+                    return new AuthResult { Success = true, TwoFactorRequired = true, UserId = user.Id };
+                }
+
+                var isValidTwoFactor = await _userRepository.VerifyTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultAuthenticatorProvider,
+                    model.TwoFactorCode
+                );
+
+                if (isValidTwoFactor)
+                {
+                    return new AuthResult { Success = true, Token = $"REAL_JWT_TOKEN_{user.Id}", UserId = user.Id };
+                }
+
+                return new AuthResult { Errors = new[] { "Nieprawidłowy kod 2FA." }, TwoFactorRequired = true, UserId = user.Id };
             }
 
             // Logika tymczasowego tokenu, jeśli nie ma 2FA
@@ -83,27 +100,6 @@ namespace _2FA_Backend.Application.Services
             }
 
             return new AuthResult { Errors = result.Errors.Select(e => e.Description) };
-        }
-
-        public async Task<AuthResult> Verify2FACodeAsync(Verify2FAModel model)
-        {
-            var user = await _userRepository.FindByIdAsync(model.UserId);
-            if (user == null) return new AuthResult { Errors = new[] { "Użytkownik nie znaleziony." } };
-
-            var isValid = await _userRepository.VerifyTwoFactorTokenAsync(
-                user,
-                TokenOptions.DefaultAuthenticatorProvider,
-                model.Code
-            );
-
-            if (isValid)
-            {
-                // Logika generowania prawdziwego tokenu JWT
-                var token = $"REAL_JWT_TOKEN_{user.Id}";
-                return new AuthResult { Success = true, Token = token, UserId = user.Id };
-            }
-
-            return new AuthResult { Errors = new[] { "Nieprawidłowy kod 2FA." } };
         }
     }
 }

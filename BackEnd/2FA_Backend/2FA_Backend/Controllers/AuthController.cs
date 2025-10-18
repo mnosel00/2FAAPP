@@ -43,28 +43,22 @@ namespace _2FA_Backend.Controllers
             {
                 if (result.TwoFactorRequired)
                 {
-                    // Użytkownik musi podać kod 2FA
+                    // Użytkownik musi podać kod 2FA w kolejnym żądaniu do tego samego endpointu
                     return Ok(new { TwoFactorRequired = true, UserId = result.UserId });
                 }
-                // Logowanie pomyślne bez 2FA lub po weryfikacji
+                // Logowanie pomyślne
                 return Ok(new { Token = result.Token, UserId = result.UserId });
             }
 
-            return Unauthorized(new { Errors = result.Errors });
-        }
-
-        [HttpPost("verify2fa")]
-        public async Task<IActionResult> Verify2FA([FromBody] Verify2FAModel model)
-        {
-            var result = await _authService.Verify2FACodeAsync(model);
-
-            if (result.Success)
+            // Jeśli logowanie nie powiodło się (np. zły kod 2FA), zwróć błąd
+            if (result.TwoFactorRequired)
             {
-                return Ok(new { Token = result.Token, UserId = result.UserId });
+                return Unauthorized(new { Errors = result.Errors, TwoFactorRequired = true, UserId = result.UserId });
             }
 
             return Unauthorized(new { Errors = result.Errors });
         }
+
 
         [HttpGet("profile/{userId}")]
         public async Task<IActionResult> GetProfile(string userId)
