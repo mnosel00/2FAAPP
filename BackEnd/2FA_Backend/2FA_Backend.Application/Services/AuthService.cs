@@ -21,7 +21,7 @@ namespace _2FA_Backend.Application.Services
         private string GenerateQrCodeUri(string email, string unformattedKey)
         {
             var issuer = "TwoFactorApp";
-            return $"otpauth://totp/{issuer}:{email}?secret={unformattedKey}&issuer={issuer}&digits=6&period=30";
+            return $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={unformattedKey}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30";
         }
 
         public Task<string> GetUserProfile(string userId)
@@ -43,7 +43,9 @@ namespace _2FA_Backend.Application.Services
                 return new AuthResult { Success = true, TwoFactorRequired = true, UserId = user.Id };
             }
 
-            return new AuthResult { Success = true, Token = $"FAKE_JWT_TOKEN_{user.Id}" };
+            // Logika tymczasowego tokenu, jeśli nie ma 2FA
+            var token = $"FAKE_JWT_TOKEN_{user.Id}";
+            return new AuthResult { Success = true, Token = token, UserId = user.Id };
         }
 
         public async Task<AuthResult> RegisterUserAsync(RegisterModel model)
@@ -59,19 +61,24 @@ namespace _2FA_Backend.Application.Services
 
             if (result.Succeeded)
             {
-                await _userRepository.ResetAuthenticatorKeyAsync(user);
-                var unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
-
+                // Włącz 2FA i wygeneruj klucz
                 await _userRepository.SetTwoFactorEnabledAsync(user, true);
+                var unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
+                if (string.IsNullOrEmpty(unformattedKey))
+                {
+                    await _userRepository.ResetAuthenticatorKeyAsync(user);
+                    unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
+                }
+
 
                 var qrCodeUri = GenerateQrCodeUri(user.Email, unformattedKey);
 
                 return new AuthResult
                 {
                     Success = true,
+                    UserId = user.Id,
                     SetupKey = unformattedKey,
-                    QrCodeUri = qrCodeUri,
-                    UserId = user.Id 
+                    QrCodeUri = qrCodeUri
                 };
             }
 
@@ -91,7 +98,9 @@ namespace _2FA_Backend.Application.Services
 
             if (isValid)
             {
-                return new AuthResult { Success = true, Token = $"REAL_JWT_TOKEN_{user.Id}", UserId = user.Id };
+                // Logika generowania prawdziwego tokenu JWT
+                var token = $"REAL_JWT_TOKEN_{user.Id}";
+                return new AuthResult { Success = true, Token = token, UserId = user.Id };
             }
 
             return new AuthResult { Errors = new[] { "Nieprawidłowy kod 2FA." } };

@@ -22,8 +22,13 @@ namespace _2FA_Backend.Controllers
 
             if (result.Success)
             {
-                // Zwraca SetupKey i QrCodeUri
-                return Ok(result);
+                // Zwraca UserId, SetupKey i QrCodeUri do konfiguracji 2FA
+                return Ok(new 
+                { 
+                    result.UserId, 
+                    result.SetupKey, 
+                    result.QrCodeUri 
+                });
             }
 
             return BadRequest(new { Errors = result.Errors });
@@ -38,9 +43,11 @@ namespace _2FA_Backend.Controllers
             {
                 if (result.TwoFactorRequired)
                 {
+                    // Użytkownik musi podać kod 2FA
                     return Ok(new { TwoFactorRequired = true, UserId = result.UserId });
                 }
-                return Ok(new { Token = result.Token });
+                // Logowanie pomyślne bez 2FA lub po weryfikacji
+                return Ok(new { Token = result.Token, UserId = result.UserId });
             }
 
             return Unauthorized(new { Errors = result.Errors });
@@ -53,7 +60,7 @@ namespace _2FA_Backend.Controllers
 
             if (result.Success)
             {
-                return Ok(new { Token = result.Token });
+                return Ok(new { Token = result.Token, UserId = result.UserId });
             }
 
             return Unauthorized(new { Errors = result.Errors });

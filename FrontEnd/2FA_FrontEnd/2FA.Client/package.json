@@ -28,6 +28,7 @@
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "ngx-qrcode": "^0.1.0-rc.1",
     "qrcode-generator": "^2.0.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
