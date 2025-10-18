@@ -1,0 +1,32 @@
+<div class="container">
+  <div *ngIf="!isTfaRequired; else tfaSection">
+    <h2>Logowanie</h2>
+    <form [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" formControlName="email" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="login-password">Hasło</label>
+        <input type="password" id="login-password" formControlName="password" class="form-control">
+      </div>
+      <button type="submit" [disabled]="loginForm.invalid" class="btn btn-primary">Zaloguj</button>
+    </form>
+  </div>
+
+  <ng-template #tfaSection>
+    <h2>Weryfikacja dwuetapowa</h2>
+    <p>Wprowadź kod z aplikacji uwierzytelniającej.</p>
+    <form [formGroup]="tfaForm" (ngSubmit)="onTfaSubmit()">
+      <div class="form-group">
+        <label for="tfa-code">Kod weryfikacyjny</label>
+        <input type="text" id="tfa-code" formControlName="code" class="form-control" maxlength="6">
+      </div>
+      <button type="submit" [disabled]="tfaForm.invalid" class="btn btn-primary">Weryfikuj</button>
+    </form>
+  </ng-template>
+
+  <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+    {{ errorMessage }}
+  </div>
+</div>
