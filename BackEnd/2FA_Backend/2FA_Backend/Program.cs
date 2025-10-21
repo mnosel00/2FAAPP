@@ -43,6 +43,11 @@ builder.Services.ConfigureApplicationCookie(options =>
         return Task.CompletedTask;
     };
 });
+builder.Services.ConfigureExternalCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
@@ -81,7 +86,8 @@ builder.Services.AddAuthentication(options =>
      options.ClientId = googleAuthNSection["ClientId"];
      options.ClientSecret = googleAuthNSection["ClientSecret"];
      // Po zalogowaniu Google przekieruje z powrotem na ten adres
-     options.CallbackPath = "/api/auth/google-callback";
+     options.CallbackPath = "/signin-google";
+
  });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -108,6 +114,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();

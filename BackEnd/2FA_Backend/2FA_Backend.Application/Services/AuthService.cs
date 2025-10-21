@@ -32,25 +32,32 @@ namespace _2FA_Backend.Application.Services
             var info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
             {
-                return new AuthResult { Errors = new[] { "Błąd podczas logowania zewnętrznego." } };
+                return new AuthResult { Errors = new[] { "Błąd podczas pobierania informacji od zewnętrznego dostawcy." } };
             }
 
+            // Spróbuj zalogować użytkownika za pomocą zewnętrznego dostawcy (np. Google)
             var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
 
             IdentityUser user;
             if (signInResult.Succeeded)
             {
+                // Użytkownik już istnieje i ma powiązane konto Google
                 user = await _userRepository.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
             }
             else
             {
+                // Użytkownik nie ma powiązanego konta lub jest nowy
                 var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-                user = await _userRepository.FindByEmailAsync(email);
+                if (string.IsNullOrEmpty(email))
+                {
+                    return new AuthResult { Errors = new[] { "Nie udało się uzyskać adresu e-mail od dostawcy." } };
+                }
 
+                user = await _userRepository.FindByEmailAsync(email);
                 if (user == null)
                 {
+                    // Użytkownik nie istnieje, więc tworzymy nowe konto
                     user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
-                    // Teraz to wywołanie jest poprawne
                     var createUserResult = await _userRepository.CreateAsync(user);
                     if (!createUserResult.Succeeded)
                     {
@@ -58,7 +65,7 @@ namespace _2FA_Backend.Application.Services
                     }
                 }
 
-                // I to wywołanie jest już poprawne
+                // Powiąż konto Google z istniejącym lub nowo utworzonym kontem w naszej bazie
                 var addLoginResult = await _userRepository.AddLoginAsync(user, info);
                 if (!addLoginResult.Succeeded)
                 {
@@ -66,6 +73,7 @@ namespace _2FA_Backend.Application.Services
                 }
             }
 
+            // Wygeneruj token JWT dla zalogowanego użytkownika
             var token = GenerateJwtToken(user);
             return new AuthResult { Success = true, Token = token, UserId = user.Id };
         }

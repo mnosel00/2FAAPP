@@ -18,10 +18,8 @@ namespace _2FA_Backend.Infastructure.Repositories
             _userManager = userManager;
         }
 
-        public Task<IdentityResult> AddLoginAsync(IdentityUser user, UserLoginInfo info)
-        {
-            throw new NotImplementedException();
-        }
+        public Task<IdentityResult> AddLoginAsync(IdentityUser user, UserLoginInfo info) =>
+            _userManager.AddLoginAsync(user, info);
 
         public Task<bool> CheckPasswordAsync(IdentityUser user, string password) =>
          _userManager.CheckPasswordAsync(user, password);
@@ -29,10 +27,8 @@ namespace _2FA_Backend.Infastructure.Repositories
         public Task<IdentityResult> CreateAsync(IdentityUser user, string password) =>
          _userManager.CreateAsync(user, password);
 
-        public Task<IdentityResult> CreateAsync(IdentityUser user)
-        {
-            throw new NotImplementedException();
-        }
+        public Task<IdentityResult> CreateAsync(IdentityUser user) =>
+            _userManager.CreateAsync(user);
 
         public Task<IdentityUser> FindByEmailAsync(string email) =>
             _userManager.FindByEmailAsync(email);
@@ -40,10 +36,8 @@ namespace _2FA_Backend.Infastructure.Repositories
         public Task<IdentityUser> FindByIdAsync(string userId) =>
              _userManager.FindByIdAsync(userId);
 
-        public Task<IdentityUser> FindByLoginAsync(string loginProvider, string providerKey)
-        {
-            throw new NotImplementedException();
-        }
+        public Task<IdentityUser> FindByLoginAsync(string loginProvider, string providerKey) =>
+            _userManager.FindByLoginAsync(loginProvider, providerKey);
 
         public Task<string> GetAuthenticatorKeyAsync(IdentityUser user) =>
          _userManager.GetAuthenticatorKeyAsync(user);
