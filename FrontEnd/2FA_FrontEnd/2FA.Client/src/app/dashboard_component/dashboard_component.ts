@@ -6,7 +6,7 @@ import { AuthService } from '../services/auth';
   selector: 'app-dashboard',
   standalone: true,
   imports: [],
-  templateUrl: './dashboard.component.html',
+  templateUrl: '../dashboard_component/dashboard_component.html',
 })
 export class DashboardComponent {
 

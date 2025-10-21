@@ -2,13 +2,14 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { QRCodeComponent } from 'angularx-qrcode'; 
+import { RouterLink } from '@angular/router'; 
 import { AuthService } from '../services/auth';
 import { RegisterResponse } from '../auth_compomnent/auth.models';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, QRCodeComponent],
+  imports: [CommonModule, ReactiveFormsModule, QRCodeComponent, RouterLink],
   templateUrl: './register_component.html',
 })
 export class RegisterComponent {
