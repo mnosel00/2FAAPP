@@ -116,7 +116,7 @@ namespace _2FA_Backend.Controllers
                     SameSite = SameSiteMode.None,
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
-                return Redirect("http://localhost:4200/login-success");
+                return Redirect($"http://localhost:4200/login-success?userId={result.UserId}");
             }
 
             return Redirect("http://localhost:4200/login-failed");
