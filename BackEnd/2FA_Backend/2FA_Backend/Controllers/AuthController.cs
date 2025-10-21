@@ -2,6 +2,7 @@
 using _2FA_Backend.Domain.DTOs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace _2FA_Backend.Controllers
@@ -11,10 +12,13 @@ namespace _2FA_Backend.Controllers
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
+        private readonly SignInManager<IdentityUser> _signInManager;
 
-        public AuthController(IAuthService authService) 
+        // KROK 1: Upewnij się, że SignInManager jest wstrzykiwany do konstruktora
+        public AuthController(IAuthService authService, SignInManager<IdentityUser> signInManager)
         {
             _authService = authService;
+            _signInManager = signInManager;
         }
 
         [HttpPost("register")]
@@ -24,12 +28,11 @@ namespace _2FA_Backend.Controllers
 
             if (result.Success)
             {
-                // Zwraca UserId, SetupKey i QrCodeUri do konfiguracji 2FA
-                return Ok(new 
-                { 
-                    result.UserId, 
-                    result.SetupKey, 
-                    result.QrCodeUri 
+                return Ok(new
+                {
+                    result.UserId,
+                    result.SetupKey,
+                    result.QrCodeUri
                 });
             }
 
@@ -45,14 +48,22 @@ namespace _2FA_Backend.Controllers
             {
                 if (result.TwoFactorRequired)
                 {
-                    // Użytkownik musi podać kod 2FA w kolejnym żądaniu do tego samego endpointu
                     return Ok(new { TwoFactorRequired = true, UserId = result.UserId });
                 }
-                // Logowanie pomyślne
-                return Ok(new { Token = result.Token, UserId = result.UserId });
+
+                if (!string.IsNullOrEmpty(result.Token))
+                {
+                    Response.Cookies.Append("auth_token", result.Token, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = SameSiteMode.None, // Wymagane dla cross-origin
+                        Expires = DateTime.UtcNow.AddHours(1)
+                    });
+                }
+                return Ok(new { UserId = result.UserId });
             }
 
-            // Jeśli logowanie nie powiodło się (np. zły kod 2FA), zwróć błąd
             if (result.TwoFactorRequired)
             {
                 return Unauthorized(new { Errors = result.Errors, TwoFactorRequired = true, UserId = result.UserId });
@@ -64,8 +75,12 @@ namespace _2FA_Backend.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            // Usunięcie ciasteczka po stronie klienta
-            Response.Cookies.Delete("auth_token");
+            Response.Cookies.Delete("auth_token", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
             return Ok(new { Message = "Wylogowano pomyślnie." });
         }
 
@@ -79,10 +94,10 @@ namespace _2FA_Backend.Controllers
         [HttpGet("google-login")]
         public IActionResult GoogleLogin()
         {
-            var properties = new AuthenticationProperties
-            {
-                RedirectUri = Url.Action(nameof(GoogleCallback))
-            };
+            // KROK 2: Używamy SignInManager do poprawnego skonfigurowania właściwości
+            // Ta metoda tworzy bezpieczne ciasteczko korelacji, którego teraz brakuje.
+            var redirectUrl = Url.Action(nameof(GoogleCallback));
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(GoogleDefaults.AuthenticationScheme, redirectUrl);
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
@@ -97,17 +112,15 @@ namespace _2FA_Backend.Controllers
                 {
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.Strict,
+                    // KROK 3: SameSite.None jest niezbędne, aby przeglądarka zapisała ciasteczko
+                    SameSite = SameSiteMode.None,
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
-                // Przekieruj użytkownika z powrotem do aplikacji frontendowej
                 return Redirect("http://localhost:4200/login-success");
             }
 
-            // Przekieruj z informacją o błędzie
             return Redirect("http://localhost:4200/login-failed");
         }
-
     }
 }
 

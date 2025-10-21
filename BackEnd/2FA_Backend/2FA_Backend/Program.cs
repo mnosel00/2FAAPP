@@ -25,16 +25,34 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     options.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultAuthenticatorProvider;
 })
-    .AddEntityFrameworkStores<ApplicationDbContext>() 
+    .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+// --- KLUCZOWA ZMIANA: Konfiguracja ciasteczek dla Identity ---
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    // Ustawiamy SameSite=None, aby ciasteczka dzia³a³y miêdzy backendem a frontendem na ró¿nych portach.
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Wymaga HTTPS
+    options.Cookie.HttpOnly = true;
+
+    // Zapobiegamy automatycznemu przekierowaniu do strony logowania, co jest typowe dla API.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+});
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    // Ustawiamy domyœlny schemat na ten u¿ywany przez Identity (oparty na ciasteczkach).
+    // To jest niezbêdne, aby logowanie zewnêtrzne (Google) dzia³a³o poprawnie.
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
 })
 .AddJwtBearer(options =>
 {
