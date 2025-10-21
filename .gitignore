@@ -13,6 +13,19 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# --- DODANE REGUŁY DLA PLIKÓW KONFIGURACYJNYCH I SEKRETÓW ---
+# Ignoruj pliki konfiguracyjne dla środowisk deweloperskich i innych
+appsettings.Development.json
+appsettings.*.json
+
+# Nie ignoruj szablonów (jeśli ich używasz)
+!appsettings.Template.json
+
+# Ignoruj pliki z mechanizmu User Secrets
+secrets.json
+*.Secret.json
+# ----------------------------------------------------------------
+
 # Mono auto generated files
 mono_crash.*
 
