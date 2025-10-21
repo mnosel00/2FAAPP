@@ -1,5 +1,7 @@
 ﻿using _2FA_Backend.Application.Interfaces;
 using _2FA_Backend.Domain.DTOs;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 
 namespace _2FA_Backend.Controllers
@@ -73,6 +75,39 @@ namespace _2FA_Backend.Controllers
             var profileInfo = await _authService.GetUserProfile(userId);
             return Ok(new { Message = profileInfo });
         }
+
+        [HttpGet("google-login")]
+        public IActionResult GoogleLogin()
+        {
+            var properties = new AuthenticationProperties
+            {
+                RedirectUri = Url.Action(nameof(GoogleCallback))
+            };
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        [HttpGet("google-callback")]
+        public async Task<IActionResult> GoogleCallback()
+        {
+            var result = await _authService.ExternalLoginCallbackAsync();
+
+            if (result.Success && !string.IsNullOrEmpty(result.Token))
+            {
+                Response.Cookies.Append("auth_token", result.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddHours(1)
+                });
+                // Przekieruj użytkownika z powrotem do aplikacji frontendowej
+                return Redirect("http://localhost:4200/login-success");
+            }
+
+            // Przekieruj z informacją o błędzie
+            return Redirect("http://localhost:4200/login-failed");
+        }
+
     }
 }
 

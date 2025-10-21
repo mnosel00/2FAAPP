@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace _2FA_Backend.Infastructure.Repositories
 {
+
     public class UserRepository : IUserRepository
     {
         private readonly UserManager<IdentityUser> _userManager;
@@ -17,17 +18,32 @@ namespace _2FA_Backend.Infastructure.Repositories
             _userManager = userManager;
         }
 
+        public Task<IdentityResult> AddLoginAsync(IdentityUser user, UserLoginInfo info)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<bool> CheckPasswordAsync(IdentityUser user, string password) =>
          _userManager.CheckPasswordAsync(user, password);
 
         public Task<IdentityResult> CreateAsync(IdentityUser user, string password) =>
          _userManager.CreateAsync(user, password);
 
+        public Task<IdentityResult> CreateAsync(IdentityUser user)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IdentityUser> FindByEmailAsync(string email) =>
             _userManager.FindByEmailAsync(email);
 
         public Task<IdentityUser> FindByIdAsync(string userId) =>
              _userManager.FindByIdAsync(userId);
+
+        public Task<IdentityUser> FindByLoginAsync(string loginProvider, string providerKey)
+        {
+            throw new NotImplementedException();
+        }
 
         public Task<string> GetAuthenticatorKeyAsync(IdentityUser user) =>
          _userManager.GetAuthenticatorKeyAsync(user);

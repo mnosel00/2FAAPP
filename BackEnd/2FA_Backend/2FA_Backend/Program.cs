@@ -56,7 +56,15 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };
-});
+})
+.AddGoogle(options =>
+ {
+     var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
+     options.ClientId = googleAuthNSection["ClientId"];
+     options.ClientSecret = googleAuthNSection["ClientSecret"];
+     // Po zalogowaniu Google przekieruje z powrotem na ten adres
+     options.CallbackPath = "/api/auth/google-callback";
+ });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -67,7 +75,8 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyHeader()
               .AllowAnyMethod()
-              .WithOrigins("http://localhost:4200");
+              .WithOrigins("http://localhost:4200")
+              .AllowCredentials();
     });
 });
 

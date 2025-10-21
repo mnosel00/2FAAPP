@@ -12,6 +12,9 @@ namespace _2FA_Backend.Domain.Interfaces
         Task<IdentityUser> FindByEmailAsync(string email);
         Task<bool> CheckPasswordAsync(IdentityUser user, string password);
         Task<IdentityResult> CreateAsync(IdentityUser user, string password);
+        Task<IdentityResult> CreateAsync(IdentityUser user);
+        Task<IdentityUser> FindByLoginAsync(string loginProvider, string providerKey); 
+        Task<IdentityResult> AddLoginAsync(IdentityUser user, UserLoginInfo info);
         Task<string> GetAuthenticatorKeyAsync(IdentityUser user);
         Task<IdentityResult> ResetAuthenticatorKeyAsync(IdentityUser user);
         Task<bool> GetTwoFactorEnabledAsync(IdentityUser user);

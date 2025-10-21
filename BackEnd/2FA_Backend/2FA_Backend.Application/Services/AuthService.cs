@@ -2,9 +2,13 @@
 using _2FA_Backend.Domain.DTOs;
 using _2FA_Backend.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,11 +17,82 @@ namespace _2FA_Backend.Application.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly IConfiguration _configuration;
 
-        public AuthService(IUserRepository userRepository)
+        public AuthService(IUserRepository userRepository, SignInManager<IdentityUser> signInManager, IConfiguration configuration)
         {
             _userRepository = userRepository;
+            _signInManager = signInManager;
+            _configuration = configuration;
         }
+
+        public async Task<AuthResult> ExternalLoginCallbackAsync()
+        {
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                return new AuthResult { Errors = new[] { "Błąd podczas logowania zewnętrznego." } };
+            }
+
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
+            IdentityUser user;
+            if (signInResult.Succeeded)
+            {
+                user = await _userRepository.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+            }
+            else
+            {
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                user = await _userRepository.FindByEmailAsync(email);
+
+                if (user == null)
+                {
+                    user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
+                    // Teraz to wywołanie jest poprawne
+                    var createUserResult = await _userRepository.CreateAsync(user);
+                    if (!createUserResult.Succeeded)
+                    {
+                        return new AuthResult { Errors = createUserResult.Errors.Select(e => e.Description) };
+                    }
+                }
+
+                // I to wywołanie jest już poprawne
+                var addLoginResult = await _userRepository.AddLoginAsync(user, info);
+                if (!addLoginResult.Succeeded)
+                {
+                    return new AuthResult { Errors = addLoginResult.Errors.Select(e => e.Description) };
+                }
+            }
+
+            var token = GenerateJwtToken(user);
+            return new AuthResult { Success = true, Token = token, UserId = user.Id };
+        }
+
+
+        private string GenerateJwtToken(IdentityUser user)
+        {
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                }),
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
         private string GenerateQrCodeUri(string email, string unformattedKey)
         {
             var issuer = "TwoFactorApp";
@@ -54,15 +129,15 @@ namespace _2FA_Backend.Application.Services
 
                 if (isValidTwoFactor)
                 {
-                    return new AuthResult { Success = true, Token = $"REAL_JWT_TOKEN_{user.Id}", UserId = user.Id };
+                    var token = GenerateJwtToken(user);
+                    return new AuthResult { Success = true, Token = token, UserId = user.Id };
                 }
 
                 return new AuthResult { Errors = new[] { "Nieprawidłowy kod 2FA." }, TwoFactorRequired = true, UserId = user.Id };
             }
 
-            // Logika tymczasowego tokenu, jeśli nie ma 2FA
-            var token = $"FAKE_JWT_TOKEN_{user.Id}";
-            return new AuthResult { Success = true, Token = token, UserId = user.Id };
+            var loginToken = GenerateJwtToken(user);
+            return new AuthResult { Success = true, Token = loginToken, UserId = user.Id };
         }
 
         public async Task<AuthResult> RegisterUserAsync(RegisterModel model)
