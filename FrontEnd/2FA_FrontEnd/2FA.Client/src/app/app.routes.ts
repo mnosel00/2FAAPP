@@ -1,11 +1,10 @@
 import { Routes } from '@angular/router';
 import { RegisterComponent } from './register_component/register_component';
 import { LoginComponent } from './login_component/login_component';
-import { DashboardComponent } from '../app/dashboard_component/dashboard_component';
+import { DashboardComponent } from './dashboard_component/dashboard_component'; // ZMIANA: Poprawiona ścieżka importu dla DashboardComponent
 import { authGuard } from './guards/auth.guard';
 import { LoginSuccessComponent } from './extended_login_component/login_success_component/login_success_component';
 import { LoginFailedComponent } from './extended_login_component/login_failed_component/login_failed_component';
-
 
 export const routes: Routes = [
     { path: 'register', component: RegisterComponent },
@@ -14,12 +13,9 @@ export const routes: Routes = [
     { path: 'login-failed', component: LoginFailedComponent },
     { 
         path: 'dashboard', 
-        component: DashboardComponent,
-        canActivate: [authGuard] // Ochrona tej ścieżki
+        component: DashboardComponent, // Ta linia jest teraz poprawna dzięki dobremu importowi
+        canActivate: [authGuard]
     },
-    
-    // Przekierowanie domyślnej ścieżki na logowanie
     { path: '', redirectTo: '/login', pathMatch: 'full' }, 
-    // Obsługa nieznanych ścieżek
     { path: '**', redirectTo: '/login' } 
 ];

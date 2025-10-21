@@ -1,5 +1,5 @@
-<div>
+<div *ngIf="currentUser$ | async as user">
   <h2>Jesteś zalogowany!</h2>
-  <p>Witaj na stronie dostępnej po zalogowaniu.</p>
+  <p>Witaj, {{ user.email }}!</p>
   <button (click)="logout()" class="btn btn-danger">Wyloguj</button>
 </div>

@@ -21,3 +21,9 @@ export interface LoginResponse {
   token?: string;
 }
 
+export interface UserProfile {
+  userId: string;
+  email: string;
+  name?: string; // Opcjonalne, w zależności od tego co zwraca backend
+}
+
