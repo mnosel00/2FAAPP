@@ -12,6 +12,13 @@
       </div>
       <button type="submit" [disabled]="loginForm.invalid" class="btn btn-primary">Zaloguj</button>
     </form>
+     <div class="text-center my-3">
+      <hr>
+      <p>lub zaloguj się przez</p>
+      <a href="https://localhost:7295/api/auth/google-login" class="btn btn-danger">
+        <i class="bi bi-google"></i> Zaloguj się z Google
+      </a>
+    </div>
     <div class="text-center mt-3">
       <p>Nie masz jeszcze konta? <a routerLink="/register">Zarejestruj się</a></p>
     </div>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of, catchError, map, tap } from 'rxjs'; 
 import { 
   RegisterRequest, 
   RegisterResponse, 
@@ -14,6 +14,7 @@ import {
 export class AuthService {
   private apiUrl = 'https://localhost:7295/api/Auth';
   private tokenKey = 'jwt_token';
+  private loggedInStatus = false;
 
   constructor(private http: HttpClient) { }
 
@@ -31,8 +32,28 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/logout`, {});
   }
 
+  checkAuthStatus(): Observable<boolean> {
+    // Sprawdź najpierw token JWT (dla logowania hasłem)
+    if (this.getToken()) {
+      this.loggedInStatus = true;
+      return of(true);
+    }
+    // Jeśli nie ma tokenu, zapytaj backend (dla logowania Google)
+       return this.http.get('/api/users/profile').pipe(
+      map(response => {
+        this.loggedInStatus = true;
+        return true; // Sukces, użytkownik jest zalogowany
+      }),
+      catchError(error => {
+        this.loggedInStatus = false;
+        return of(false); // Błąd (np. 401), użytkownik nie jest zalogowany
+      })
+    );
+  }
+
   saveToken(token: string): void {
     localStorage.setItem(this.tokenKey, token);
+    this.loggedInStatus = true;
   }
 
   getToken(): string | null {
@@ -41,6 +62,7 @@ export class AuthService {
 
   clearToken(): void {
     localStorage.removeItem(this.tokenKey);
+    this.loggedInStatus = false;
   }
 
   isLoggedIn(): boolean {
