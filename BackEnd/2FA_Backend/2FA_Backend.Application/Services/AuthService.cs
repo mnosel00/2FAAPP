@@ -1,6 +1,7 @@
 ﻿using _2FA_Backend.Application.Interfaces;
 using _2FA_Backend.Domain.DTOs;
 using _2FA_Backend.Domain.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -19,12 +20,24 @@ namespace _2FA_Backend.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuthService(IUserRepository userRepository, SignInManager<IdentityUser> signInManager, IConfiguration configuration)
+        public AuthService(IUserRepository userRepository, SignInManager<IdentityUser> signInManager, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
             _signInManager = signInManager;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        public async Task<UserProfile?> GetCurrentUserProfileAsync()
+        {
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return null;
+            }
+            return await GetUserProfile(userId);
         }
 
         public async Task<AuthResult> ExternalLoginCallbackAsync()

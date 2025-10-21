@@ -12,6 +12,7 @@ namespace _2FA_Backend.Application.Interfaces
         Task<AuthResult> RegisterUserAsync(RegisterModel model);
         Task<AuthResult> LoginUserAsync(LoginModel model);
         Task<UserProfile?> GetUserProfile(string userId);
+        Task<UserProfile?> GetCurrentUserProfileAsync(); // Nowa metoda
         Task<AuthResult> ExternalLoginCallbackAsync();
     }
 }

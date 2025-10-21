@@ -2,6 +2,7 @@
 using _2FA_Backend.Domain.DTOs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +20,18 @@ namespace _2FA_Backend.Controllers
         {
             _authService = authService;
             _signInManager = signInManager;
+        }
+
+        [Authorize] // Ten atrybut zapewnia, że tylko zalogowani użytkownicy mogą uzyskać dostęp
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetCurrentUserProfile()
+        {
+            var profileInfo = await _authService.GetCurrentUserProfileAsync();
+            if (profileInfo == null)
+            {
+                return Unauthorized(new { Message = "Nie udało się zidentyfikować użytkownika." });
+            }
+            return Ok(profileInfo);
         }
 
         [HttpPost("register")]

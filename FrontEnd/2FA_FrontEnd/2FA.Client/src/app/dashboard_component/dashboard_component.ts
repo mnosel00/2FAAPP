@@ -1,14 +1,15 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth';
-import { Observable } from 'rxjs/internal/Observable';
+import { Observable } from 'rxjs'; // ZMIANA: Poprawny import
 import { UserProfile } from '../auth_compomnent/auth.models';
+import { CommonModule } from '@angular/common'; // ZMIANA: Dodaj ten import
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [],
-  templateUrl: '../dashboard_component/dashboard_component.html',
+  imports: [CommonModule], // ZMIANA: Dodaj CommonModule, aby działał pipe 'async' w szablonie
+  templateUrl: './dashboard_component.html', // Poprawiona ścieżka
 })
 export class DashboardComponent {
   currentUser$: Observable<UserProfile | null>;
@@ -19,14 +20,15 @@ export class DashboardComponent {
 
   logout(): void {
     this.authService.logout().subscribe({
-      next: () => {
-        console.log('Wylogowano pomyślnie.');
+      // Używamy 'complete' lub po prostu polegamy na tym, że serwis już wyczyścił stan
+      complete: () => {
+        console.log('Wylogowano pomyślnie, przekierowuję.');
         this.router.navigate(['/login']);
       },
       error: (err) => {
-        console.error('Błąd podczas wylogowywania', err);
-        // Nawet jeśli wystąpi błąd, wyloguj lokalnie i przekieruj
-        this.authService.clearToken();
+        console.error('Błąd podczas wylogowywania z serwera, ale wylogowuję lokalnie.', err);
+        // Nawet jeśli serwer zwróci błąd, serwis już wyczyścił stan lokalny,
+        // więc po prostu przekierowujemy użytkownika.
         this.router.navigate(['/login']);
       }
     });

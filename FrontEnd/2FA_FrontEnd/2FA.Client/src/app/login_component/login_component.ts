@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../services/auth';
-import { LoginRequest } from '../auth_compomnent/auth.models';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth';
+import { LoginRequest, LoginResponse } from '../auth_compomnent/auth.models';
 
 @Component({
   selector: 'app-login',
@@ -17,7 +17,7 @@ export class LoginComponent {
   isTfaRequired = false;
   errorMessage: string | null = null;
 
-  constructor(private fb: FormBuilder, private authService: AuthService,private router: Router) {
+  constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]],
@@ -35,15 +35,13 @@ export class LoginComponent {
     }
     this.errorMessage = null;
     
-    // Wysyłamy tylko email i hasło
     this.authService.login(this.loginForm.value).subscribe({
       next: (response) => {
         if (response.twoFactorRequired) {
-          // Jeśli serwer wymaga 2FA, przechodzimy do drugiego etapu
           this.isTfaRequired = true;
-        } else if (response.token) {
-          // Jeśli 2FA nie jest wymagane i dostaliśmy token, logowanie jest zakończone
-          this.handleSuccessfulLogin(response.token);
+        } else if (response.userId) {
+          // Logowanie bez 2FA zakończone sukcesem
+          this.handleSuccessfulLogin(response.userId);
         }
       },
       error: (err) => {
@@ -53,14 +51,13 @@ export class LoginComponent {
     });
   }
 
-  // Etap 2: Weryfikacja kodu 2FA
+  // ZMIANA: Logika po kliknięciu "Weryfikuj"
   onTfaSubmit(): void {
     if (this.tfaForm.invalid || this.loginForm.invalid) {
       return;
     }
     this.errorMessage = null;
 
-    // Tworzymy nowe żądanie zawierające email, hasło ORAZ kod 2FA
     const loginRequest: LoginRequest = {
       ...this.loginForm.value,
       twoFactorCode: this.tfaForm.get('code')?.value
@@ -68,9 +65,11 @@ export class LoginComponent {
 
     this.authService.login(loginRequest).subscribe({
       next: (response) => {
-        if (response.token) {
-          // Otrzymaliśmy token, logowanie 2FA zakończone sukcesem
-          this.handleSuccessfulLogin(response.token);
+        // Zakładamy, że odpowiedź po weryfikacji 2FA zawiera userId
+        if (response.userId) {
+          this.handleSuccessfulLogin(response.userId);
+        } else {
+          this.errorMessage = 'Logowanie nie powiodło się. Spróbuj ponownie.';
         }
       },
       error: (err) => {
@@ -80,9 +79,19 @@ export class LoginComponent {
     });
   }
 
-  private handleSuccessfulLogin(token: string): void {
-    console.log('Zalogowano pomyślnie!');
-    this.authService.saveToken(token);
-    this.router.navigate(['/dashboard']);
+  // Metoda pomocnicza do obsługi udanego logowania
+  private handleSuccessfulLogin(userId: string): void {
+    // Po udanym logowaniu pobieramy profil, aby zaktualizować stan w AuthService
+    this.authService.getProfile(userId).subscribe({
+      next: () => {
+        console.log('Logowanie pomyślne, pobrano profil. Przekierowuję na dashboard.');
+        // Przekierowanie na dashboard
+        this.router.navigate(['/dashboard']);
+      },
+      error: (err) => {
+        console.error('Logowanie pomyślne, ale nie udało się pobrać profilu', err);
+        this.errorMessage = 'Wystąpił błąd po zalogowaniu. Spróbuj ponownie.';
+      }
+    });
   }
 }
