@@ -380,6 +380,10 @@ FodyWeavers.xsd
 /out-tsc
 /bazel-out
 
+# Ignoruj pliki konfiguracyjne dla środowisk deweloperskich i innych
+appsettings.Development.json
+appsettings.*.json
+
 # Node
 /node_modules
 npm-debug.log
