@@ -88,7 +88,13 @@ namespace _2FA_Backend.Controllers
         public async Task<IActionResult> GetProfile(string userId)
         {
             var profileInfo = await _authService.GetUserProfile(userId);
-            return Ok(new { Message = profileInfo });
+
+            if (profileInfo == null)
+            {
+                return NotFound(new { Message = "Użytkownik nie znaleziony." });
+            }
+
+            return Ok(profileInfo);
         }
 
         [HttpGet("google-login")]

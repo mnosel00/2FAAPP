@@ -107,9 +107,19 @@ namespace _2FA_Backend.Application.Services
             return $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={unformattedKey}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30";
         }
 
-        public Task<string> GetUserProfile(string userId)
+        public async Task<UserProfile?> GetUserProfile(string userId)
         {
-            return Task.FromResult($"Witaj na stronie profilowej, użytkowniku o ID: {userId}! Jesteś zalogowany i zweryfikowany.");
+            var user = await _userRepository.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return null;
+            }
+
+            return new UserProfile
+            {
+                UserId = user.Id,
+                Email = user.Email
+            };
         }
 
         public async Task<AuthResult> LoginUserAsync(LoginModel model)
