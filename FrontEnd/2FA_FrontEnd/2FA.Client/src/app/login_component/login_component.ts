@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth';
 import { LoginRequest } from '../auth_compomnent/auth.models';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -16,7 +17,7 @@ export class LoginComponent {
   isTfaRequired = false;
   errorMessage: string | null = null;
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
+  constructor(private fb: FormBuilder, private authService: AuthService,private router: Router) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]],
@@ -80,12 +81,8 @@ export class LoginComponent {
   }
 
   private handleSuccessfulLogin(token: string): void {
-    console.log('Zalogowano pomyślnie! Token JWT:', token);
-    // Tutaj możesz zapisać token (np. w localStorage) i przekierować użytkownika
-    // localStorage.setItem('jwt_token', token);
-    // this.router.navigate(['/dashboard']);
-    this.isTfaRequired = false;
-    this.loginForm.reset();
-    this.tfaForm.reset();
+    console.log('Zalogowano pomyślnie!');
+    this.authService.saveToken(token);
+    this.router.navigate(['/dashboard']);
   }
 }

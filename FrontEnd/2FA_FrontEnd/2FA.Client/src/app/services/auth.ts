@@ -13,6 +13,7 @@ import {
 })
 export class AuthService {
   private apiUrl = 'https://localhost:7295/api/Auth';
+  private tokenKey = 'jwt_token';
 
   constructor(private http: HttpClient) { }
 
@@ -24,5 +25,25 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, data);
   }
 
-  
+  logout(): Observable<any> {
+    const token = this.getToken();
+    this.clearToken(); 
+    return this.http.post(`${this.apiUrl}/logout`, {});
+  }
+
+  saveToken(token: string): void {
+    localStorage.setItem(this.tokenKey, token);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  clearToken(): void {
+    localStorage.removeItem(this.tokenKey);
+  }
+
+  isLoggedIn(): boolean {
+    return !!this.getToken();
+  }
 }
