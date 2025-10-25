@@ -21,6 +21,9 @@ namespace _2FA_Backend.Infastructure.Repositories
         public Task<IdentityResult> AddLoginAsync(IdentityUser user, UserLoginInfo info) =>
             _userManager.AddLoginAsync(user, info);
 
+        public Task<IdentityResult> ChangePasswordAsync(IdentityUser user, string currentPassword, string newPassword) =>
+             _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
         public Task<bool> CheckPasswordAsync(IdentityUser user, string password) =>
          _userManager.CheckPasswordAsync(user, password);
 

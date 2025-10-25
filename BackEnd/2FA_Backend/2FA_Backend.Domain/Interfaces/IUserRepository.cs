@@ -23,5 +23,7 @@ namespace _2FA_Backend.Domain.Interfaces
         Task<bool> VerifyTwoFactorTokenAsync(IdentityUser user, string tokenProvider, string code);
         Task<string> GeneratePasswordResetTokenAsync(IdentityUser user);
         Task<IdentityResult> ResetPasswordAsync(IdentityUser user, string token, string newPassword);
+        Task<IdentityResult> ChangePasswordAsync(IdentityUser user, string currentPassword, string newPassword);
+
     }
 }

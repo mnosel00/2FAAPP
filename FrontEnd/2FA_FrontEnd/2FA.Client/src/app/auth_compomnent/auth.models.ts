@@ -24,12 +24,18 @@ export interface LoginResponse {
 export interface UserProfile {
   userId: string;
   email: string;
-  name?: string; // Opcjonalne, w zależności od tego co zwraca backend
+  name?: string; 
 }
 
 export interface ResetPasswordRequest {
   email: string;
   token: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+export interface ChangePasswordRequest {
+  oldPassword: string;
   newPassword: string;
   confirmNewPassword: string;
 }

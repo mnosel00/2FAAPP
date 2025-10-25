@@ -48,7 +48,6 @@ namespace _2FA_Backend.Application.Services
                 return new AuthResult { Errors = new[] { "Błąd podczas pobierania informacji od zewnętrznego dostawcy." } };
             }
 
-            // Spróbuj zalogować użytkownika za pomocą zewnętrznego dostawcy (np. Google)
             var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
 
             IdentityUser user;
@@ -219,6 +218,29 @@ namespace _2FA_Backend.Application.Services
             var resetToken = await _userRepository.GeneratePasswordResetTokenAsync(user);
             var result = await _userRepository.ResetPasswordAsync(user, resetToken, model.NewPassword);
 
+            if (result.Succeeded)
+            {
+                return new AuthResult { Success = true };
+            }
+
+            return new AuthResult { Errors = result.Errors.Select(e => e.Description) };
+        }
+
+        public async Task<AuthResult> ChangePasswordAsync(ChangePasswordModel model)
+        {
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return new AuthResult { Errors = new[] { "Użytkownik nie jest zalogowany." } };
+            }
+
+            var user = await _userRepository.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return new AuthResult { Errors = new[] { "Nie znaleziono użytkownika." } };
+            }
+
+            var result = await _userRepository.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
             if (result.Succeeded)
             {
                 return new AuthResult { Success = true };

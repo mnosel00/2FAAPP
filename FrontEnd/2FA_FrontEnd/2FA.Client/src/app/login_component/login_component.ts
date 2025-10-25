@@ -28,7 +28,6 @@ export class LoginComponent {
     });
   }
 
-  // Etap 1: Weryfikacja loginu i hasła
   onLoginSubmit(): void {
     if (this.loginForm.invalid) {
       return;
@@ -40,7 +39,6 @@ export class LoginComponent {
         if (response.twoFactorRequired) {
           this.isTfaRequired = true;
         } else if (response.userId) {
-          // Logowanie bez 2FA zakończone sukcesem
           this.handleSuccessfulLogin(response.userId);
         }
       },
@@ -51,7 +49,6 @@ export class LoginComponent {
     });
   }
 
-  // ZMIANA: Logika po kliknięciu "Weryfikuj"
   onTfaSubmit(): void {
     if (this.tfaForm.invalid || this.loginForm.invalid) {
       return;
@@ -65,7 +62,6 @@ export class LoginComponent {
 
     this.authService.login(loginRequest).subscribe({
       next: (response) => {
-        // Zakładamy, że odpowiedź po weryfikacji 2FA zawiera userId
         if (response.userId) {
           this.handleSuccessfulLogin(response.userId);
         } else {
@@ -79,13 +75,10 @@ export class LoginComponent {
     });
   }
 
-  // Metoda pomocnicza do obsługi udanego logowania
   private handleSuccessfulLogin(userId: string): void {
-    // Po udanym logowaniu pobieramy profil, aby zaktualizować stan w AuthService
     this.authService.getProfile(userId).subscribe({
       next: () => {
         console.log('Logowanie pomyślne, pobrano profil. Przekierowuję na dashboard.');
-        // Przekierowanie na dashboard
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {

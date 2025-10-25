@@ -58,7 +58,7 @@ export class ResetPasswordComponent {
         this.successMessage = 'Hasło zostało pomyślnie zresetowane. Za chwilę zostaniesz przekierowany do strony logowania...';
         setTimeout(() => {
           this.router.navigate(['/login']);
-        }, 3000); // Przekierowanie po 3 sekundach
+        }, 3000); 
       },
       error: (err:any) => {
         if (err.error && err.error.errors) {

@@ -7,7 +7,8 @@ import {
   LoginRequest, 
   LoginResponse,
   UserProfile,
-  ResetPasswordRequest, 
+  ResetPasswordRequest,
+  ChangePasswordRequest, 
 } from '../auth_compomnent/auth.models';
 
 @Injectable({
@@ -20,21 +21,17 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    // Przy starcie aplikacji próbujemy odzyskać sesję na podstawie ciasteczka
     this.checkAuthStatus().subscribe();
   }
 
-  // ZMIANA: Dodano withCredentials: true
   register(data: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${this.apiUrl}/register`, data, { withCredentials: true });
   }
 
-  // ZMIANA: Dodano withCredentials: true i usunięto obsługę tokenu
   login(data: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, data, { withCredentials: true });
   }
 
-  // ZMIANA: Dodano withCredentials: true
   getProfile(userId: string): Observable<UserProfile> {
     return this.http.get<UserProfile>(`${this.apiUrl}/profile/${userId}`, {
       withCredentials: true 
@@ -45,9 +42,8 @@ export class AuthService {
     );
   }
 
-  // ZMIANA: Główna metoda do weryfikacji sesji przy starcie aplikacji
+ 
   checkAuthStatus(): Observable<boolean> {
-    // Endpoint /profile bez ID powinien zwracać dane zalogowanego użytkownika na podstawie ciasteczka
     return this.http.get<UserProfile>(`${this.apiUrl}/profile`, { withCredentials: true }).pipe(
       map(user => {
         this.currentUserSubject.next(user);
@@ -60,19 +56,21 @@ export class AuthService {
     );
   }
 
-  // ZMIANA: Dodano withCredentials: true i uproszczono logikę
   logout(): Observable<any> {
     const obs = this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true });
-    this.currentUserSubject.next(null); // Natychmiast czyścimy stan użytkownika
+    this.currentUserSubject.next(null); 
     return obs;
   }
 
-  // ZMIANA: Metoda opiera się już tylko na stanie w serwisie
   isLoggedIn(): boolean {
     return !!this.currentUserSubject.value;
   }
 
   resetPassword(data: ResetPasswordRequest): Observable<any> {
     return this.http.post(`${this.apiUrl}/reset-password`, data, { withCredentials: true });
+  }
+
+  changePassword(data: ChangePasswordRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/change-password`, data, { withCredentials: true });
   }
 }

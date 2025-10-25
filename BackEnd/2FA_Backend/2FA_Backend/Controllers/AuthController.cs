@@ -15,14 +15,13 @@ namespace _2FA_Backend.Controllers
         private readonly IAuthService _authService;
         private readonly SignInManager<IdentityUser> _signInManager;
 
-        // KROK 1: Upewnij się, że SignInManager jest wstrzykiwany do konstruktora
         public AuthController(IAuthService authService, SignInManager<IdentityUser> signInManager)
         {
             _authService = authService;
             _signInManager = signInManager;
         }
 
-        [Authorize] // Ten atrybut zapewnia, że tylko zalogowani użytkownicy mogą uzyskać dostęp
+        [Authorize] 
         [HttpGet("profile")]
         public async Task<IActionResult> GetCurrentUserProfile()
         {
@@ -130,8 +129,7 @@ namespace _2FA_Backend.Controllers
         [HttpGet("google-login")]
         public IActionResult GoogleLogin()
         {
-            // KROK 2: Używamy SignInManager do poprawnego skonfigurowania właściwości
-            // Ta metoda tworzy bezpieczne ciasteczko korelacji, którego teraz brakuje.
+            
             var redirectUrl = Url.Action(nameof(GoogleCallback));
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(GoogleDefaults.AuthenticationScheme, redirectUrl);
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
@@ -148,7 +146,6 @@ namespace _2FA_Backend.Controllers
                 {
                     HttpOnly = true,
                     Secure = true,
-                    // KROK 3: SameSite.None jest niezbędne, aby przeglądarka zapisała ciasteczko
                     SameSite = SameSiteMode.None,
                     Expires = DateTime.UtcNow.AddHours(1)
                 });
@@ -156,6 +153,24 @@ namespace _2FA_Backend.Controllers
             }
 
             return Redirect("http://localhost:4200/login-failed");
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.ChangePasswordAsync(model);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(new { message = "Hasło zostało pomyślnie zmienione." });
         }
     }
 }

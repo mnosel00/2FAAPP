@@ -1,5 +1,47 @@
 <div *ngIf="currentUser$ | async as user">
-  <h2>Jesteś zalogowany!</h2>
-  <p>Witaj, {{ user.email }}!</p>
+  <h2>Witaj, {{ user.email }}!</h2>
+  <p>Jesteś zalogowany na swoim koncie.</p>
   <button (click)="logout()" class="btn btn-danger">Wyloguj</button>
+</div>
+
+<hr class="my-4">
+
+<!-- ZMIANA: Dodany formularz zmiany hasła -->
+<div class="mt-4">
+  <h3>Zmień hasło</h3>
+  <form [formGroup]="changePasswordForm" (ngSubmit)="onChangePasswordSubmit()" novalidate>
+    <!-- Stare hasło -->
+    <div class="form-group mb-3">
+      <label for="oldPassword">Stare hasło</label>
+      <input type="password" id="oldPassword" class="form-control" formControlName="oldPassword">
+      <div *ngIf="changePasswordForm.get('oldPassword')?.invalid && changePasswordForm.get('oldPassword')?.touched" class="text-danger mt-1">
+        <small *ngIf="changePasswordForm.get('oldPassword')?.errors?.['required']">Stare hasło jest wymagane.</small>
+      </div>
+    </div>
+
+    <!-- Nowe hasło -->
+    <div class="form-group mb-3">
+      <label for="newPassword">Nowe hasło</label>
+      <input type="password" id="newPassword" class="form-control" formControlName="newPassword">
+      <div *ngIf="changePasswordForm.get('newPassword')?.invalid && changePasswordForm.get('newPassword')?.touched" class="text-danger mt-1">
+        <small *ngIf="changePasswordForm.get('newPassword')?.errors?.['required']">Nowe hasło jest wymagane.</small>
+        <small *ngIf="changePasswordForm.get('newPassword')?.errors?.['minlength']">Hasło musi mieć co najmniej 8 znaków.</small>
+        <small *ngIf="changePasswordForm.get('newPassword')?.errors?.['pattern']">Hasło musi zawierać dużą i małą literę, cyfrę oraz znak specjalny.</small>
+      </div>
+    </div>
+
+    <!-- Potwierdź nowe hasło -->
+    <div class="form-group mb-3">
+      <label for="confirmNewPassword">Potwierdź nowe hasło</label>
+      <input type="password" id="confirmNewPassword" class="form-control" formControlName="confirmNewPassword">
+      <div *ngIf="changePasswordForm.errors?.['passwordsMismatch'] && changePasswordForm.get('confirmNewPassword')?.touched" class="text-danger mt-1">
+        <small>Hasła nie są zgodne.</small>
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="changePasswordForm.invalid" class="btn btn-primary">Zmień hasło</button>
+  </form>
+
+  <div *ngIf="successMessage" class="alert alert-success mt-3">{{ successMessage }}</div>
+  <div *ngIf="errorMessage" class="alert alert-danger mt-3">{{ errorMessage }}</div>
 </div>
