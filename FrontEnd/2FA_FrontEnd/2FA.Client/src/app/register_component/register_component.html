@@ -2,19 +2,50 @@
   <div *ngIf="!registrationSuccess; else qrCodeSection">
     <h2>Rejestracja</h2>
     <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" formControlName="email" class="form-control">
+      
+      <div class="form-group mb-3">
+        <label for="email">Adres Email</label>
+        <input type="email" id="email" class="form-control" formControlName="email">
+        <!-- Komunikaty o błędach dla email -->
+        <div *ngIf="registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)" class="text-danger mt-1">
+          <small *ngIf="registerForm.get('email')?.errors?.['required']">Adres e-mail jest wymagany.</small>
+          <small *ngIf="registerForm.get('email')?.errors?.['email']">Nieprawidłowy format adresu e-mail.</small>
+        </div>
       </div>
-      <div class="form-group">
+
+      <div class="form-group mb-3">
         <label for="password">Hasło</label>
-        <input type="password" id="password" formControlName="password" class="form-control">
+        <input type="password" id="password" class="form-control" formControlName="password">
+        <!-- Komunikaty o błędach dla hasła -->
+        <div *ngIf="registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)" class="text-danger mt-1">
+          <small *ngIf="registerForm.get('password')?.errors?.['required']">Hasło jest wymagane.</small>
+          <small *ngIf="registerForm.get('password')?.errors?.['minlength']">Hasło musi mieć co najmniej 8 znaków.</small>
+          <small *ngIf="registerForm.get('password')?.errors?.['pattern']">Hasło musi zawierać dużą i małą literę, cyfrę oraz znak specjalny.</small>
+        </div>
       </div>
+
+      <div class="form-group mb-3">
+        <label for="confirmPassword">Potwierdź Hasło</label>
+        <input type="password" id="confirmPassword" class="form-control" formControlName="confirmPassword">
+        <!-- Komunikat o błędzie dla potwierdzenia hasła -->
+        <div *ngIf="registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)" class="text-danger mt-1">
+          <small *ngIf="registerForm.get('confirmPassword')?.errors?.['required']">Potwierdzenie hasła jest wymagane.</small>
+        </div>
+        <!-- Komunikat o niezgodności haseł -->
+        <div *ngIf="registerForm.errors?.['passwordsMismatch'] && registerForm.get('confirmPassword')?.touched" class="text-danger mt-1">
+          <small>Hasła nie są zgodne.</small>
+        </div>
+      </div>
+
       <button type="submit" [disabled]="registerForm.invalid" class="btn btn-primary">Zarejestruj</button>
+      
       <div *ngIf="errorMessage" class="alert alert-danger mt-3">
         {{ errorMessage }}
       </div>
     </form>
+    <div class="text-center mt-3">
+      <p>Masz już konto? <a routerLink="/login">Zaloguj się</a></p>
+    </div>
   </div>
 
   <ng-template #qrCodeSection>

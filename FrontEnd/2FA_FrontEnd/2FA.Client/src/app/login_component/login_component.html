@@ -5,10 +5,17 @@
       <div class="form-group">
         <label for="login-email">Email</label>
         <input type="email" id="login-email" formControlName="email" class="form-control">
+        <div *ngIf="loginForm.get('email')?.invalid && (loginForm.get('email')?.dirty || loginForm.get('email')?.touched)" class="text-danger mt-1">
+          <small *ngIf="loginForm.get('email')?.errors?.['required']">Adres e-mail jest wymagany.</small>
+          <small *ngIf="loginForm.get('email')?.errors?.['email']">Nieprawidłowy format adresu e-mail.</small>
+        </div>
       </div>
       <div class="form-group">
         <label for="login-password">Hasło</label>
         <input type="password" id="login-password" formControlName="password" class="form-control">
+        <div *ngIf="loginForm.get('password')?.invalid && (loginForm.get('password')?.dirty || loginForm.get('password')?.touched)" class="text-danger mt-1">
+          <small *ngIf="loginForm.get('password')?.errors?.['required']">Hasło jest wymagane.</small>
+        </div>
       </div>
       <button type="submit" [disabled]="loginForm.invalid" class="btn btn-primary">Zaloguj</button>
     </form>

@@ -9,11 +9,12 @@ namespace _2FA_Backend.Domain.DTOs
 {
     public class LoginModel
     {
-        [Required]
-        [EmailAddress]
+        
+        [Required(ErrorMessage = "Adres e-mail jest wymagany.")]
+        [EmailAddress(ErrorMessage = "Nieprawidłowy format adresu e-mail.")]
         public string Email { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Hasło jest wymagane.")]
         public string Password { get; set; }
 
         public string? TwoFactorCode { get; set; }
