@@ -39,6 +39,9 @@ namespace _2FA_Backend.Infastructure.Repositories
         public Task<IdentityUser> FindByLoginAsync(string loginProvider, string providerKey) =>
             _userManager.FindByLoginAsync(loginProvider, providerKey);
 
+        public Task<string> GeneratePasswordResetTokenAsync(IdentityUser user) =>
+             _userManager.GeneratePasswordResetTokenAsync(user);
+
         public Task<string> GetAuthenticatorKeyAsync(IdentityUser user) =>
          _userManager.GetAuthenticatorKeyAsync(user);
 
@@ -47,6 +50,9 @@ namespace _2FA_Backend.Infastructure.Repositories
 
         public Task<IdentityResult> ResetAuthenticatorKeyAsync(IdentityUser user) =>
             _userManager.ResetAuthenticatorKeyAsync(user);
+
+        public Task<IdentityResult> ResetPasswordAsync(IdentityUser user, string token, string newPassword) =>
+           _userManager.ResetPasswordAsync(user, token, newPassword);
 
         public Task<IdentityResult> SetTwoFactorEnabledAsync(IdentityUser user, bool enabled) =>
              _userManager.SetTwoFactorEnabledAsync(user, enabled);

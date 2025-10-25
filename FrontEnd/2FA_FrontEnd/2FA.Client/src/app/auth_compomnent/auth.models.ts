@@ -27,3 +27,10 @@ export interface UserProfile {
   name?: string; // Opcjonalne, w zależności od tego co zwraca backend
 }
 
+export interface ResetPasswordRequest {
+  email: string;
+  token: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+

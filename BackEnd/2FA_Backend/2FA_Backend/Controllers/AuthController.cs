@@ -34,6 +34,23 @@ namespace _2FA_Backend.Controllers
             return Ok(profileInfo);
         }
 
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.ResetPasswordAsync(model);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(new { message = "Hasło zostało pomyślnie zresetowane." });
+        }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterModel model)
         {

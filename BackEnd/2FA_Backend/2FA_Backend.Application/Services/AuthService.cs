@@ -54,12 +54,10 @@ namespace _2FA_Backend.Application.Services
             IdentityUser user;
             if (signInResult.Succeeded)
             {
-                // Użytkownik już istnieje i ma powiązane konto Google
                 user = await _userRepository.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
             }
             else
             {
-                // Użytkownik nie ma powiązanego konta lub jest nowy
                 var email = info.Principal.FindFirstValue(ClaimTypes.Email);
                 if (string.IsNullOrEmpty(email))
                 {
@@ -69,7 +67,6 @@ namespace _2FA_Backend.Application.Services
                 user = await _userRepository.FindByEmailAsync(email);
                 if (user == null)
                 {
-                    // Użytkownik nie istnieje, więc tworzymy nowe konto
                     user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
                     var createUserResult = await _userRepository.CreateAsync(user);
                     if (!createUserResult.Succeeded)
@@ -78,7 +75,6 @@ namespace _2FA_Backend.Application.Services
                     }
                 }
 
-                // Powiąż konto Google z istniejącym lub nowo utworzonym kontem w naszej bazie
                 var addLoginResult = await _userRepository.AddLoginAsync(user, info);
                 if (!addLoginResult.Succeeded)
                 {
@@ -86,7 +82,6 @@ namespace _2FA_Backend.Application.Services
                 }
             }
 
-            // Wygeneruj token JWT dla zalogowanego użytkownika
             var token = GenerateJwtToken(user);
             return new AuthResult { Success = true, Token = token, UserId = user.Id };
         }
@@ -148,7 +143,6 @@ namespace _2FA_Backend.Application.Services
             {
                 if (string.IsNullOrEmpty(model.TwoFactorCode))
                 {
-                    // Hasło poprawne, ale wymagany jest kod 2FA
                     return new AuthResult { Success = true, TwoFactorRequired = true, UserId = user.Id };
                 }
 
@@ -203,6 +197,31 @@ namespace _2FA_Backend.Application.Services
                     SetupKey = unformattedKey,
                     QrCodeUri = qrCodeUri
                 };
+            }
+
+            return new AuthResult { Errors = result.Errors.Select(e => e.Description) };
+        }
+
+        public async Task<AuthResult> ResetPasswordAsync(ResetPasswordModel model)
+        {
+            var user = await _userRepository.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return new AuthResult { Errors = new[] { "Nieprawidłowe dane." } };
+            }
+
+            var isTokenValid = await _userRepository.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider, model.Token);
+            if (!isTokenValid)
+            {
+                return new AuthResult { Errors = new[] { "Nieprawidłowy kod weryfikacyjny." } };
+            }
+
+            var resetToken = await _userRepository.GeneratePasswordResetTokenAsync(user);
+            var result = await _userRepository.ResetPasswordAsync(user, resetToken, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                return new AuthResult { Success = true };
             }
 
             return new AuthResult { Errors = result.Errors.Select(e => e.Description) };

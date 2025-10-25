@@ -14,5 +14,6 @@ namespace _2FA_Backend.Application.Interfaces
         Task<UserProfile?> GetUserProfile(string userId);
         Task<UserProfile?> GetCurrentUserProfileAsync(); // Nowa metoda
         Task<AuthResult> ExternalLoginCallbackAsync();
+        Task<AuthResult> ResetPasswordAsync(ResetPasswordModel model);
     }
 }
