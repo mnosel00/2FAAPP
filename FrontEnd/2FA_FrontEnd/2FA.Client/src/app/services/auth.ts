@@ -6,7 +6,8 @@ import {
   RegisterResponse, 
   LoginRequest, 
   LoginResponse,
-  UserProfile, 
+  UserProfile,
+  ResetPasswordRequest, 
 } from '../auth_compomnent/auth.models';
 
 @Injectable({
@@ -69,5 +70,9 @@ export class AuthService {
   // ZMIANA: Metoda opiera się już tylko na stanie w serwisie
   isLoggedIn(): boolean {
     return !!this.currentUserSubject.value;
+  }
+
+  resetPassword(data: ResetPasswordRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password`, data, { withCredentials: true });
   }
 }

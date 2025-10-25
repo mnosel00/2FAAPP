@@ -19,7 +19,7 @@ function passwordMatcher(control: AbstractControl): { [key: string]: boolean } |
   selector: 'app-reset-password',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  templateUrl: './reset-password.component.html',
+  templateUrl: './reset_password_component.html',
 })
 export class ResetPasswordComponent {
   resetForm: FormGroup;
@@ -60,7 +60,7 @@ export class ResetPasswordComponent {
           this.router.navigate(['/login']);
         }, 3000); // Przekierowanie po 3 sekundach
       },
-      error: (err) => {
+      error: (err:any) => {
         if (err.error && err.error.errors) {
           this.errorMessage = err.error.errors.join(' ');
         } else {
