@@ -1,1 +1,293 @@
-/* You can add global styles to this file, and also import other style files */
+
+:root {
+  --bg:#172642;
+  --surface:#0f1724;
+  --card:#0d131c;
+  --text:#e6eef8;
+  --muted:#94a3b8;
+  --primary:#2563eb;
+  --primary-contrast:#eaf2ff;
+  --danger:#ef4444;
+  --success:#10b981;
+  --border: rgba(255,255,255,0.06);
+  --radius:8px;
+  --glass: rgba(255,255,255,0.02);
+}
+
+/* Base */
+html,body {
+  height:100%;
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:linear-gradient(180deg,var(--bg), #071019 120%);
+  color:var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.4;
+  box-sizing:border-box;
+}
+
+main.app-shell {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+
+.container {
+  width: 420px;
+  margin: 0; 
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.02));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(2,6,23,0.6);
+}
+
+h1,h2,h3,h4 {
+  color:var(--text);
+  margin:0 0 12px 0;
+  font-weight:600;
+}
+
+.card {
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:16px;
+  border:1px solid rgba(255,255,255,0.03);
+  margin-bottom:12px;
+}
+
+
+/* Buttons */
+.btn {
+  display:inline-block;
+  padding:8px 14px;
+  border-radius:8px;
+  border:1px solid transparent;
+  cursor:pointer;
+  font-weight:600;
+  color:var(--text);
+  background:var(--glass);
+  transition:all .12s ease;
+  text-decoration:none;
+}
+
+.btn:hover { transform:translateY(-1px); }
+
+.btn-primary {
+  background: linear-gradient(180deg,var(--primary), #1f59d6);
+  color:var(--primary-contrast);
+  border-color: rgba(255,255,255,0.04);
+}
+
+.btn-danger {
+  background: linear-gradient(180deg,var(--danger), #d33b3b);
+  color:#fff;
+  border-color: rgba(255,255,255,0.04);
+}
+
+.btn-success {
+  background: linear-gradient(180deg,var(--success), #05986a);
+  color:#fff;
+  border-color: rgba(255,255,255,0.04);
+}
+
+
+/* Form controls */
+.form-group { margin-bottom:12px; }
+
+.form-control {
+  width:100%;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+  color:var(--text);
+  outline:none;
+  box-sizing:border-box;
+}
+
+.form-control::placeholder { color:var(--muted); }
+
+.form-control:focus {
+  box-shadow:0 0 0 4px rgba(37,99,235,0.12);
+  border-color: rgba(37,99,235,0.6);
+}
+
+
+/* Alerts */
+.alert {
+  padding:12px 14px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.03);
+  margin-top:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+  color:var(--text);
+}
+
+.alert-success {
+  border-left:4px solid var(--success);
+  background: linear-gradient(180deg, rgba(16,185,129,0.04), rgba(0,0,0,0.02));
+  color: #d2f8e8;
+}
+
+.alert-danger {
+  border-left:4px solid var(--danger);
+  background: linear-gradient(180deg, rgba(239,68,68,0.04), rgba(0,0,0,0.02));
+  color: #ffdede;
+}
+
+
+/* Small helpers */
+.text-center { text-align:center; }
+.mt-1 { margin-top:6px; }
+.mt-3 { margin-top:18px; }
+.mb-3 { margin-bottom:18px; }
+.my-3 { margin-top:18px; margin-bottom:18px; }
+.hr { border: none; border-top:1px solid var(--border); margin:18px 0; }
+
+
+/* Links */
+a { color:var(--primary-contrast); text-decoration:underline; }
+a.router-link-active { font-weight:700; }
+
+
+/* Responsive tweaks */
+@media (max-width:600px) {
+  .container { margin:16px; padding:14px; }
+  .btn { width:100%; text-align:center; }
+}
+
+
+/* Labels / small helper */
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+
+/* Input visual block (like .inputField) */
+.form-group .form-control {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  padding-left: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+  color: var(--text);
+  box-sizing: border-box;
+  transition: box-shadow .12s ease, border-color .12s ease;
+}
+
+.form-group .form-control {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+.form-control::placeholder {
+  color: var(--muted);
+  opacity: 0.9;
+}
+
+
+/* Focus */
+.form-group .form-control:focus {
+  outline: none;
+  box-shadow: 0 0 0 6px rgba(37,99,235,0.08);
+  border-color: rgba(37,99,235,0.6);
+}
+
+
+/* Email icon (left) */
+#login-email {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='5' width='18' height='14' rx='2' ry='2'></rect><polyline points='3 7 12 13 21 7'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+}
+
+
+/* Password icon (left) */
+#login-password {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='11' width='18' height='10' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 10 0v4'></path></svg>");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+}
+
+
+/* Submit button (login) should be prominent and full width */
+form .btn.btn-primary {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 1.05rem;
+  border-radius: 10px;
+}
+
+
+/* Google login button styling - make it inline-block and balanced */
+.text-center .btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+
+/* Helper texts */
+.text-center.my-3 p {
+  color: var(--muted);
+  margin: 10px 0;
+}
+
+
+/* Small links & reset password */
+.text-center.mt-3 p,
+.text-center.mt-3 p a,
+.container p a {
+  color: var(--primary-contrast);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+
+/* Error alert spacing */
+.alert {
+  margin-top: 14px;
+  border-radius: 10px;
+}
+
+
+/* TFA input (same look as other inputs) */
+#tfa-code {
+  padding-left: 14px;
+}
+
+
+/* Responsive tweak: preserve spacing on small screens */
+@media (max-width: 480px) {
+  .container {
+    margin: 16px;
+    padding: 16px;
+    width: auto;
+  }
+  .form-group .form-control { padding-left: 36px; }
+}
+
+
+/* small utility classes to match provided layout names if needed later */
+.loginMenu { /* non-invasive: safe if added in future */ max-width: 420px; margin: 0 auto; padding: 12px; }
+.inputItemContainer { margin-bottom: 16px; }
+.inputField { display:flex; align-items:center; gap:10px; }
+.iconButton { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; }
