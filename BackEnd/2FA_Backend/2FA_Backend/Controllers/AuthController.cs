@@ -3,69 +3,42 @@ using _2FA_Backend.Domain.DTOs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity; // Potrzebne tylko do nazw schematów, nie logiki
 using Microsoft.AspNetCore.Mvc;
 
 namespace _2FA_Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : Controller
+    public class AuthController : ControllerBase // Zmiana z Controller na ControllerBase (lżejsze dla API)
     {
         private readonly IAuthService _authService;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(IAuthService authService, SignInManager<IdentityUser> signInManager)
+        // Nie wstrzykujemy już SignInManager! Kontroler ma o nim nie wiedzieć.
+        public AuthController(IAuthService authService, IConfiguration configuration)
         {
             _authService = authService;
-            _signInManager = signInManager;
+            _configuration = configuration;
         }
 
-        [Authorize] 
+        [Authorize]
         [HttpGet("profile")]
-        public async Task<IActionResult> GetCurrentUserProfile()
+        public async Task<ActionResult<UserProfile>> GetCurrentUserProfile()
         {
             var profileInfo = await _authService.GetCurrentUserProfileAsync();
-            if (profileInfo == null)
-            {
-                return Unauthorized(new { Message = "Nie udało się zidentyfikować użytkownika." });
-            }
+            if (profileInfo == null) return Unauthorized(new { Message = "Nie udało się zidentyfikować użytkownika." });
+
             return Ok(profileInfo);
-        }
-
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var result = await _authService.ResetPasswordAsync(model);
-            if (!result.Success)
-            {
-                return BadRequest(result);
-            }
-
-            return Ok(new { message = "Hasło zostało pomyślnie zresetowane." });
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterModel model)
         {
             var result = await _authService.RegisterUserAsync(model);
+            if (!result.Success) return BadRequest(new { Errors = result.Errors });
 
-            if (result.Success)
-            {
-                return Ok(new
-                {
-                    result.UserId,
-                    result.SetupKey,
-                    result.QrCodeUri
-                });
-            }
-
-            return BadRequest(new { Errors = result.Errors });
+            return Ok(new { result.UserId, result.SetupKey, result.QrCodeUri });
         }
 
         [HttpPost("login")]
@@ -73,65 +46,38 @@ namespace _2FA_Backend.Controllers
         {
             var result = await _authService.LoginUserAsync(model);
 
-            if (result.Success)
+            if (!result.Success)
             {
+                // Jeśli wymagane jest 2FA, zwracamy specyficzny status, ale bez tokena
                 if (result.TwoFactorRequired)
-                {
-                    return Ok(new { TwoFactorRequired = true, UserId = result.UserId });
-                }
+                    return Unauthorized(new { TwoFactorRequired = true, UserId = result.UserId });
 
-                if (!string.IsNullOrEmpty(result.Token))
-                {
-                    Response.Cookies.Append("auth_token", result.Token, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.None, // Wymagane dla cross-origin
-                        Expires = DateTime.UtcNow.AddHours(1)
-                    });
-                }
-                return Ok(new { UserId = result.UserId });
+                return Unauthorized(new { Errors = result.Errors });
             }
 
-            if (result.TwoFactorRequired)
+            // DRY: Użycie metody pomocniczej
+            if (!string.IsNullOrEmpty(result.Token))
             {
-                return Unauthorized(new { Errors = result.Errors, TwoFactorRequired = true, UserId = result.UserId });
+                SetTokenCookie(result.Token);
             }
 
-            return Unauthorized(new { Errors = result.Errors });
+            return Ok(new { UserId = result.UserId });
         }
 
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            Response.Cookies.Delete("auth_token", new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None
-            });
+            DeleteTokenCookie();
             return Ok(new { Message = "Wylogowano pomyślnie." });
         }
 
-        [HttpGet("profile/{userId}")]
-        public async Task<IActionResult> GetProfile(string userId)
-        {
-            var profileInfo = await _authService.GetUserProfile(userId);
-
-            if (profileInfo == null)
-            {
-                return NotFound(new { Message = "Użytkownik nie znaleziony." });
-            }
-
-            return Ok(profileInfo);
-        }
+        // --- Google Auth ---
 
         [HttpGet("google-login")]
         public IActionResult GoogleLogin()
         {
-            
             var redirectUrl = Url.Action(nameof(GoogleCallback));
-            var properties = _signInManager.ConfigureExternalAuthenticationProperties(GoogleDefaults.AuthenticationScheme, redirectUrl);
+            var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
@@ -140,38 +86,63 @@ namespace _2FA_Backend.Controllers
         {
             var result = await _authService.ExternalLoginCallbackAsync();
 
+            var frontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:4200";
+
             if (result.Success && !string.IsNullOrEmpty(result.Token))
             {
-                Response.Cookies.Append("auth_token", result.Token, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddHours(1)
-                });
-                return Redirect($"http://localhost:4200/login-success?userId={result.UserId}");
+                SetTokenCookie(result.Token);
+                return Redirect($"{frontendUrl}/login-success?userId={result.UserId}");
             }
 
-            return Redirect("http://localhost:4200/login-failed");
+            return Redirect($"{frontendUrl}/login-failed");
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var result = await _authService.ResetPasswordAsync(model);
+            if (!result.Success) return BadRequest(result);
+
+            return Ok(new { message = "Hasło zostało pomyślnie zresetowane." });
         }
 
         [Authorize]
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword(ChangePasswordModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var result = await _authService.ChangePasswordAsync(model);
-            if (!result.Success)
-            {
-                return BadRequest(result);
-            }
+            if (!result.Success) return BadRequest(result);
 
             return Ok(new { message = "Hasło zostało pomyślnie zmienione." });
         }
+
+        // --- PRIVATE HELPERS (DRY & KISS) ---
+
+        private void SetTokenCookie(string token)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true, // Wymagane na produkcji (HTTPS)
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddHours(1)
+            };
+            Response.Cookies.Append("auth_token", token, cookieOptions);
+        }
+
+        private void DeleteTokenCookie()
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            };
+            Response.Cookies.Delete("auth_token", cookieOptions);
+        }
     }
 }
-

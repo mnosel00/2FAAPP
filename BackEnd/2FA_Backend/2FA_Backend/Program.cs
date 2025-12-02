@@ -12,102 +12,111 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddHttpContextAccessor();
-
+// 1. Konfiguracja bazy danych
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// 2. Identity Config
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     options.Tokens.AuthenticatorTokenProvider = TokenOptions.DefaultAuthenticatorProvider;
+    options.User.RequireUniqueEmail = true; // Wymagaj unikalnych emaili
 })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
-// --- KLUCZOWA ZMIANA: Konfiguracja ciasteczek dla Identity ---
+// 3. Cookie Config (Identity)
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    // Ustawiamy SameSite=None, aby ciasteczka dzia³a³y miêdzy backendem a frontendem na ró¿nych portach.
     options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Wymaga HTTPS
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.HttpOnly = true;
-
-    // Zapobiegamy automatycznemu przekierowaniu do strony logowania, co jest typowe dla API.
     options.Events.OnRedirectToLogin = context =>
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         return Task.CompletedTask;
     };
 });
+
 builder.Services.ConfigureExternalCookie(options =>
 {
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
+// 4. JWT Config
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
+var secretKey = jwtSettings["Secret"];
+if (string.IsNullOrEmpty(secretKey)) throw new Exception("JWT Secret is null!");
+
+var key = Encoding.ASCII.GetBytes(secretKey);
 
 builder.Services.AddAuthentication(options =>
 {
-    // Ustawiamy domyœlny schemat na ten u¿ywany przez Identity (oparty na ciasteczkach).
-    // To jest niezbêdne, aby logowanie zewnêtrzne (Google) dzia³a³o poprawnie.
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    options.RequireHttpsMetadata = false; // Na produkcji zmieniæ na true!
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false,
-        ValidateAudience = false
+        ValidateIssuer = false, // Warto ustawiæ na true na produkcji i dodaæ "Issuer" w appsettings
+        ValidateAudience = false, // Warto ustawiæ na true na produkcji
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
     };
-    // Odczytywanie tokenu z ciasteczka
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            context.Token = context.Request.Cookies["auth_token"];
+            if (context.Request.Cookies.ContainsKey("auth_token"))
+            {
+                context.Token = context.Request.Cookies["auth_token"];
+            }
             return Task.CompletedTask;
         }
     };
 })
 .AddGoogle(options =>
- {
-     var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
-     options.ClientId = googleAuthNSection["ClientId"];
-     options.ClientSecret = googleAuthNSection["ClientSecret"];
-     // Po zalogowaniu Google przekieruje z powrotem na ten adres
-     options.CallbackPath = "/signin-google";
+{
+    var googleAuth = builder.Configuration.GetSection("Authentication:Google");
+    options.ClientId = googleAuth["ClientId"];
+    options.ClientSecret = googleAuth["ClientSecret"];
+    options.CallbackPath = "/signin-google";
+});
 
- });
+// 5. Dependency Injection
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddControllers();
+builder.Services.AddOpenApi();
 
+// Rejestracja serwisów (Clean Architecture)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>(); // Nowy serwis!
 
+// 6. CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
+        // Pobieramy dozwolone origin z konfiguracji
+        var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:4200";
+
         policy.AllowAnyHeader()
               .AllowAnyMethod()
-              .WithOrigins("http://localhost:4200")
+              .WithOrigins(frontendUrl)
               .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -115,8 +124,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("CorsPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 

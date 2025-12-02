@@ -3,15 +3,7 @@ using _2FA_Backend.Domain.DTOs;
 using _2FA_Backend.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace _2FA_Backend.Application.Services
 {
@@ -19,24 +11,26 @@ namespace _2FA_Backend.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IJwtTokenGenerator _jwtTokenGenerator; // Nowa zależność
 
-        public AuthService(IUserRepository userRepository, SignInManager<IdentityUser> signInManager, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
+        public AuthService(
+            IUserRepository userRepository,
+            SignInManager<IdentityUser> signInManager,
+            IHttpContextAccessor httpContextAccessor,
+            IJwtTokenGenerator jwtTokenGenerator)
         {
             _userRepository = userRepository;
             _signInManager = signInManager;
-            _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
+            _jwtTokenGenerator = jwtTokenGenerator;
         }
 
         public async Task<UserProfile?> GetCurrentUserProfileAsync()
         {
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(userId)) return null;
+
             return await GetUserProfile(userId);
         }
 
@@ -44,100 +38,63 @@ namespace _2FA_Backend.Application.Services
         {
             var info = await _signInManager.GetExternalLoginInfoAsync();
             if (info == null)
-            {
-                return new AuthResult { Errors = new[] { "Błąd podczas pobierania informacji od zewnętrznego dostawcy." } };
-            }
+                return new AuthResult { Errors = new[] { "Błąd zewnętrznego dostawcy." } };
 
+            // Próba logowania
             var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
 
-            IdentityUser user;
+            IdentityUser? user = null;
+
             if (signInResult.Succeeded)
             {
                 user = await _userRepository.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
             }
             else
             {
+                // Rejestracja nowego użytkownika z Google
                 var email = info.Principal.FindFirstValue(ClaimTypes.Email);
                 if (string.IsNullOrEmpty(email))
-                {
-                    return new AuthResult { Errors = new[] { "Nie udało się uzyskać adresu e-mail od dostawcy." } };
-                }
+                    return new AuthResult { Errors = new[] { "Brak adresu email od dostawcy." } };
 
                 user = await _userRepository.FindByEmailAsync(email);
+
                 if (user == null)
                 {
                     user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };
-                    var createUserResult = await _userRepository.CreateAsync(user);
-                    if (!createUserResult.Succeeded)
-                    {
-                        return new AuthResult { Errors = createUserResult.Errors.Select(e => e.Description) };
-                    }
+                    var createResult = await _userRepository.CreateAsync(user);
+                    if (!createResult.Succeeded)
+                        return new AuthResult { Errors = createResult.Errors.Select(e => e.Description) };
                 }
 
                 var addLoginResult = await _userRepository.AddLoginAsync(user, info);
                 if (!addLoginResult.Succeeded)
-                {
                     return new AuthResult { Errors = addLoginResult.Errors.Select(e => e.Description) };
-                }
             }
 
-            var token = GenerateJwtToken(user);
+            if (user == null)
+                return new AuthResult { Errors = new[] { "Błąd logowania." } };
+
+            var token = _jwtTokenGenerator.GenerateToken(user);
             return new AuthResult { Success = true, Token = token, UserId = user.Id };
-        }
-
-
-        private string GenerateJwtToken(IdentityUser user)
-        {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
-
-        private string GenerateQrCodeUri(string email, string unformattedKey)
-        {
-            var issuer = "TwoFactorApp";
-            return $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={unformattedKey}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30";
         }
 
         public async Task<UserProfile?> GetUserProfile(string userId)
         {
             var user = await _userRepository.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return null;
-            }
-
-            return new UserProfile
-            {
-                UserId = user.Id,
-                Email = user.Email
-            };
+            return user == null ? null : new UserProfile { UserId = user.Id, Email = user.Email };
         }
 
         public async Task<AuthResult> LoginUserAsync(LoginModel model)
         {
             var user = await _userRepository.FindByEmailAsync(model.Email);
 
+            // SECURITY: Generic error message to prevent User Enumeration
             if (user == null || !await _userRepository.CheckPasswordAsync(user, model.Password))
             {
-                return new AuthResult { Errors = new[] { "Nieprawidłowy login lub hasło." } };
+                return new AuthResult { Errors = new[] { "Nieprawidłowe dane logowania." } };
             }
 
+            // 2FA Logic
             if (await _userRepository.GetTwoFactorEnabledAsync(user))
             {
                 if (string.IsNullOrEmpty(model.TwoFactorCode))
@@ -151,102 +108,96 @@ namespace _2FA_Backend.Application.Services
                     model.TwoFactorCode
                 );
 
-                if (isValidTwoFactor)
+                if (!isValidTwoFactor)
                 {
-                    var token = GenerateJwtToken(user);
-                    return new AuthResult { Success = true, Token = token, UserId = user.Id };
+                    return new AuthResult { Errors = new[] { "Nieprawidłowy kod 2FA." }, TwoFactorRequired = true, UserId = user.Id };
                 }
-
-                return new AuthResult { Errors = new[] { "Nieprawidłowy kod 2FA." }, TwoFactorRequired = true, UserId = user.Id };
             }
 
-            var loginToken = GenerateJwtToken(user);
-            return new AuthResult { Success = true, Token = loginToken, UserId = user.Id };
+            var token = _jwtTokenGenerator.GenerateToken(user);
+            return new AuthResult { Success = true, Token = token, UserId = user.Id };
         }
 
         public async Task<AuthResult> RegisterUserAsync(RegisterModel model)
         {
+            // Sprawdzenie czy istnieje
             var existingUser = await _userRepository.FindByEmailAsync(model.Email);
             if (existingUser != null)
             {
-                return new AuthResult { Errors = new[] { "Użytkownik już istnieje." } };
+                return new AuthResult { Errors = new[] { "Użytkownik o podanym adresie już istnieje." } };
             }
 
             var user = new IdentityUser { UserName = model.Email, Email = model.Email, EmailConfirmed = true };
             var result = await _userRepository.CreateAsync(user, model.Password);
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                // Włącz 2FA i wygeneruj klucz
-                await _userRepository.SetTwoFactorEnabledAsync(user, true);
-                var unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
-                if (string.IsNullOrEmpty(unformattedKey))
-                {
-                    await _userRepository.ResetAuthenticatorKeyAsync(user);
-                    unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
-                }
-
-
-                var qrCodeUri = GenerateQrCodeUri(user.Email, unformattedKey);
-
-                return new AuthResult
-                {
-                    Success = true,
-                    UserId = user.Id,
-                    SetupKey = unformattedKey,
-                    QrCodeUri = qrCodeUri
-                };
+                return new AuthResult { Errors = result.Errors.Select(e => e.Description) };
             }
 
-            return new AuthResult { Errors = result.Errors.Select(e => e.Description) };
+            // Setup 2FA
+            await _userRepository.SetTwoFactorEnabledAsync(user, true);
+            var unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
+
+            if (string.IsNullOrEmpty(unformattedKey))
+            {
+                await _userRepository.ResetAuthenticatorKeyAsync(user);
+                unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
+            }
+
+            // Generowanie URI do kodu QR przeniesione do metody prywatnej lub helpera, 
+            // ale tutaj zostawiam lokalnie dla czytelności serwisu.
+            var qrCodeUri = GenerateQrCodeUri(user.Email!, unformattedKey!);
+
+            return new AuthResult
+            {
+                Success = true,
+                UserId = user.Id,
+                SetupKey = unformattedKey,
+                QrCodeUri = qrCodeUri
+            };
         }
+
+        // Metody ResetPassword i ChangePassword zostawiam bez zmian logicznych, 
+        // są poprawne, pamiętaj tylko o weryfikacji usera.
 
         public async Task<AuthResult> ResetPasswordAsync(ResetPasswordModel model)
         {
             var user = await _userRepository.FindByEmailAsync(model.Email);
-            if (user == null)
-            {
-                return new AuthResult { Errors = new[] { "Nieprawidłowe dane." } };
-            }
+            // SECURITY: Zawsze zwracaj sukces, nawet jeśli email nie istnieje, żeby nie zdradzać bazy.
+            // W tym przypadku (Reset z tokenem 2FA) musimy jednak poinformować o błędnym tokenie.
+            if (user == null) return new AuthResult { Errors = new[] { "Nieprawidłowe dane." } };
 
             var isTokenValid = await _userRepository.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider, model.Token);
-            if (!isTokenValid)
-            {
-                return new AuthResult { Errors = new[] { "Nieprawidłowy kod weryfikacyjny." } };
-            }
+            if (!isTokenValid) return new AuthResult { Errors = new[] { "Nieprawidłowy kod weryfikacyjny." } };
 
             var resetToken = await _userRepository.GeneratePasswordResetTokenAsync(user);
             var result = await _userRepository.ResetPasswordAsync(user, resetToken, model.NewPassword);
 
-            if (result.Succeeded)
-            {
-                return new AuthResult { Success = true };
-            }
-
-            return new AuthResult { Errors = result.Errors.Select(e => e.Description) };
+            return result.Succeeded
+                ? new AuthResult { Success = true }
+                : new AuthResult { Errors = result.Errors.Select(e => e.Description) };
         }
 
         public async Task<AuthResult> ChangePasswordAsync(ChangePasswordModel model)
         {
             var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return new AuthResult { Errors = new[] { "Użytkownik nie jest zalogowany." } };
-            }
+            if (userId == null) return new AuthResult { Errors = new[] { "Błąd autoryzacji." } };
 
             var user = await _userRepository.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return new AuthResult { Errors = new[] { "Nie znaleziono użytkownika." } };
-            }
+            if (user == null) return new AuthResult { Errors = new[] { "Nie znaleziono użytkownika." } };
 
             var result = await _userRepository.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
-            if (result.Succeeded)
-            {
-                return new AuthResult { Success = true };
-            }
 
-            return new AuthResult { Errors = result.Errors.Select(e => e.Description) };
+            return result.Succeeded
+                ? new AuthResult { Success = true }
+                : new AuthResult { Errors = result.Errors.Select(e => e.Description) };
+        }
+
+        private string GenerateQrCodeUri(string email, string unformattedKey)
+        {
+            const string issuer = "TwoFactorApp";
+            return $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}?secret={unformattedKey}&issuer={Uri.EscapeDataString(issuer)}&digits=6&period=30";
         }
     }
 }
