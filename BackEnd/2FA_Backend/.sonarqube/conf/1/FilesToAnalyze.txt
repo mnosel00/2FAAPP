@@ -1,0 +1,3 @@
+﻿C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Application\Interfaces\IAuthService.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Application\Services\AuthService.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Application\Services\JwtTokenGenerator.cs

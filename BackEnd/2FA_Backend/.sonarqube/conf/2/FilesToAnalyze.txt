@@ -1,0 +1,5 @@
+﻿C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Infastructure\Data\ApplicationDbContext.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Infastructure\Migrations\20251015204724_init.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Infastructure\Migrations\20251015204724_init.Designer.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Infastructure\Migrations\ApplicationDbContextModelSnapshot.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Infastructure\Repositories\UserRepository.cs

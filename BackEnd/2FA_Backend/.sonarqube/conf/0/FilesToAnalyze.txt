@@ -1,0 +1,7 @@
+﻿C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Domain\DTOs\AuthResult.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Domain\DTOs\ChangePasswordModel.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Domain\DTOs\LoginModel.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Domain\DTOs\RegisterModel.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Domain\DTOs\ResetPasswordModel.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Domain\DTOs\UserProfile.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend.Domain\Interfaces\IUserRepository.cs

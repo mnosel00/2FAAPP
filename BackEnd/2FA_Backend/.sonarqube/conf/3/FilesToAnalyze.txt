@@ -1,0 +1,9 @@
+﻿C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\Controllers\AuthController.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\Program.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\obj\Debug\net9.0\2FA_Backend.GlobalUsings.g.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\obj\Debug\net9.0\.NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\obj\Debug\net9.0\2FA_Backend.AssemblyInfo.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\obj\Debug\net9.0\2FA_Backend.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\appsettings.json
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\2FA_Backend.http
+C:\Users\Mateusz\source\repos\mnosel00\2FAAPP\BackEnd\2FA_Backend\2FA_Backend\Properties\launchSettings.json
