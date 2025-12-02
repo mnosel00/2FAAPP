@@ -145,8 +145,7 @@ namespace _2FA_Backend.Application.Services
                 unformattedKey = await _userRepository.GetAuthenticatorKeyAsync(user);
             }
 
-            // Generowanie URI do kodu QR przeniesione do metody prywatnej lub helpera, 
-            // ale tutaj zostawiam lokalnie dla czytelności serwisu.
+            
             var qrCodeUri = GenerateQrCodeUri(user.Email!, unformattedKey!);
 
             return new AuthResult
