@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Diagnostics;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,28 +56,53 @@ var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
 
 builder.Services.AddAuthentication(options =>
 {
-    // Ustawiamy domyœlny schemat na ten u¿ywany przez Identity (oparty na ciasteczkach).
-    // To jest niezbêdne, aby logowanie zewnêtrzne (Google) dzia³a³o poprawnie.
-    options.DefaultScheme = IdentityConstants.ApplicationScheme;
-    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+    // --- ZMIANA 1: Ustawiamy JWT jako domyœlny schemat dla API ---
+    // Schematy Identity bêd¹ u¿ywane tylko w razie potrzeby (np. przy logowaniu Google)
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    // --- ZMIANA 2: Poprawiamy walidacjê tokenu ---
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false,
-        ValidateAudience = false
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"], // POPRAWKA
+        ValidAudience = builder.Configuration["JwtSettings:Audience"], // POPRAWKA
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"])) // POPRAWKA
     };
-    // Odczytywanie tokenu z ciasteczka
+    // Odczytywanie tokenu z ciasteczka - to ju¿ masz poprawnie
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            context.Token = context.Request.Cookies["auth_token"];
+            var accessToken = context.Request.Cookies["auth_token"];
+
+            // LOGOWANIE DIAGNOSTYCZNE
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Debug.WriteLine(">>> [DEBUG] Brak ciasteczka 'auth_token' w ¿¹daniu!");
+            }
+            else
+            {
+                Debug.WriteLine($">>> [DEBUG] Znaleziono ciasteczko 'auth_token'. D³ugoœæ: {accessToken.Length}");
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        },
+        OnAuthenticationFailed = context =>
+        {
+            // TO POKA¯E DLACZEGO TOKEN JEST ODRZUCANY
+            Debug.WriteLine($">>> [DEBUG] B³¹d walidacji tokenu: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Debug.WriteLine(">>> [DEBUG] Token poprawny!");
             return Task.CompletedTask;
         }
     };
@@ -86,7 +112,6 @@ builder.Services.AddAuthentication(options =>
      var googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
      options.ClientId = googleAuthNSection["ClientId"];
      options.ClientSecret = googleAuthNSection["ClientSecret"];
-     // Po zalogowaniu Google przekieruje z powrotem na ten adres
      options.CallbackPath = "/signin-google";
 
  });
